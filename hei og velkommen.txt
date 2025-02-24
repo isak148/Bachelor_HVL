@@ -1,1 +1,3 @@
-hei og velkommen
+hei og velkommen 
+
+Dette er fra raspberry
