@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
 from ms5837 import MS5837_02BA, MS5837_30BA
-from llog import LLogWriter
+from llog import llog
 
 device = 'ms5837'
-parser = LLogWriter.create_default_parser(__file__, device)
+parser = llog.LLogWriter.create_default_parser(__file__, device)
 parser.add_argument('--bar02', action='store_true',
                     help='run test for Bar02 02BA model (default is Bar30 30BA model)')
 parser.add_argument('--bus', action='store', type=int, required=True)
