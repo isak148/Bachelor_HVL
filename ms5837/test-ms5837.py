@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from ms5837 import MS5837_02BA, MS5837_30BA
-from llog import llog
+import llog
 
 device = 'ms5837'
 parser = llog.LLogWriter.create_default_parser(__file__, device)
