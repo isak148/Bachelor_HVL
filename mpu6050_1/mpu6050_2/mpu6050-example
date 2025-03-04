@@ -2,9 +2,10 @@
 """Released under the MIT License
 Copyright 2015, 2016 MrTijn/Tijndagamer
 """
-
 from mpu6050 import mpu6050
 from time import sleep
+#import smbus2
+
 
 sensor = mpu6050(0x68)
 
