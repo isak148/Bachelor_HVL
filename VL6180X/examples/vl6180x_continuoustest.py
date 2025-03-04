@@ -5,7 +5,6 @@
 # continuous mode
 
 import time
-
 import board
 import busio
 

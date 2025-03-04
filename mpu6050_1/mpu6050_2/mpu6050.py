@@ -9,6 +9,7 @@ https://github.com/m-rtijn/mpu6050
 """
 
 import smbus2 as  smbus
+import time
 
 class mpu6050:
 
@@ -70,6 +71,7 @@ class mpu6050:
         self.bus = smbus.SMBus(bus)
         # Wake up the MPU-6050 since it starts in sleep mode
         self.bus.write_byte_data(self.address, self.PWR_MGMT_1, 0x00)
+        time.sleep(0.1)
 
     # I2C communication methods
 
@@ -266,8 +268,9 @@ if __name__ == "__main__":
     accel_data = mpu.get_accel_data()
     print(accel_data['x'])
     print(accel_data['y'])
-    print(accel_data['z'])
+    print(round(accel_data['z'],2))
     gyro_data = mpu.get_gyro_data()
     print(gyro_data['x'])
     print(gyro_data['y'])
     print(gyro_data['z'])
+
