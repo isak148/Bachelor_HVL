@@ -47,6 +47,7 @@ while True:
                 sensor.pressure(ms5837.UNITS_psi), # Request psi
                 sensor.temperature(), # Default is degrees C (no arguments)
                 sensor.temperature(ms5837.UNITS_Farenheit))) # Request Farenheit
+                time.sleep(0.5)
         else:
                 print("Sensor read failed!")
                 exit(1)
