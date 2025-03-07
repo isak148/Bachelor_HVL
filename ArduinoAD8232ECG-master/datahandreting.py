@@ -15,7 +15,7 @@ try:
             data |= (bit << i)
             time.sleep(delay_time)
         print("Sensor Value:", data)
-        time.sleep(0.1) #delay between readings.
+        time.sleep(0.2) #delay between readings.
 
 except KeyboardInterrupt:
     GPIO.cleanup()
