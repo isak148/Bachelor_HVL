@@ -198,7 +198,7 @@ if __name__ == "__main__":
             print("svømmer")
         else: 
             print("flyter")
-            
+
         file_path = "sensor_data.csv"
         file_exists = os.path.exists(file_path)
 
@@ -206,8 +206,8 @@ if __name__ == "__main__":
             writer = csv.writer(file)
             if not file_exists:
                 writer.writerow(["Accelerometer x", "Accelerometer y", "Accelerometer z", 
-                                "Gyroscope x", "Gyroscope y", "Gyroscope z"])
+                                "Gyroscope x", "Gyroscope y", "Gyroscope z", "role", "pitch"])
 
             writer.writerow([accel_data['x'], accel_data['y'], accel_data['z'], 
-                            gyro_data['x'], gyro_data['y'], gyro_data['z'],])
+                            gyro_data['x'], gyro_data['y'], gyro_data['z'],orientation['roll'],orientation['pitch']])
         sleep(0.01)
