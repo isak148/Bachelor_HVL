@@ -6,6 +6,8 @@
 
 import adafruit_vl6180x
 import time
+import csv
+import os
 import board
 import busio
 
@@ -27,7 +29,15 @@ while True:
     # Read the range in millimeters and print it.
     range_mm = sensor.range
     print("Range: {0}mm".format(range_mm))
+    
+    file_path = "sensor_data_VL6180x.csv"
+    file_exists = os.path.exists(file_path)
 
+    with open(file_path, "a", newline='') as file:
+        writer = csv.writer(file)
+        if not file_exists:
+            writer.writerow(["Range"])
+        writer.writerow([range_mm])
     # Delay for 10 ms
     time.sleep(0.1)
 
