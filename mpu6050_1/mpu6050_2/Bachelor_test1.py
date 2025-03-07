@@ -21,7 +21,7 @@ class MPU6050_Orientation(mpu6050):
 
         self.gyro_angle_x = 0.0
         self.gyro_angle_y = 0.0
-        self.alpha = 0.98 #Komplementær filtervekt
+        self.alpha = 0.95 #Komplementær filtervekt
         self.last_time = time.time()
 
         # variabler for automatiskkalibrering av roll pitch 
@@ -130,21 +130,25 @@ class MPU6050_Orientation(mpu6050):
                 self.pitch_offset = 180.0
                 self.gyro_angle_x = accel_angle_x +180
                 self.gyro_angle_y = accel_angle_y +180                   
-            self.stable_count_z = 0
+            self.stable_count_z = 0 # Resetter teller
         elif self.stable_count_y >= self.required_stable_count:
             self.gyro_angle_x = accel_angle_x # Nullstill akkumulert roll 
             if accel_data['y'] > 0: # hvis +1g på Y-aksen
                 self.roll_offset = 90.0
+                self.pitch_offset = 0.0
             else: # -1G på y-aksen 
                 self.roll_offset = -90.0
-            self.stable_count_y = 0
+                self.pitch_offset = 0.0
+            self.stable_count_y = 0 # Resetter teller
         elif self.stable_count_x >= self.required_stable_count:
             self.gyro_angle_y = accel_angle_y # Nullstill akkumulert pitch 
             if accel_data['x'] < 0: # hvis +1g på Y-aksen 
                 self.pitch_offset = -90.0
+                self.roll_offset = 0.0
             else: #Hvis -1g på x-aksen
                 self.pitch_offset = 90.0
-            self.stable_count_x = 0
+                self.roll_offset = 0.0
+            self.stable_count_x = 0 # Resetter teller 
         else:
             pass 
 
@@ -187,4 +191,9 @@ if __name__ == "__main__":
     
     
         print(f"Roll: {orientation['roll']:.2f}, Pitch: {orientation['pitch']:.2f}")
+
+        if abs(orientation['pitch']) > 45.0:
+            print("svømmer")
+        else: 
+            print("flyter")
         sleep(0.01)
