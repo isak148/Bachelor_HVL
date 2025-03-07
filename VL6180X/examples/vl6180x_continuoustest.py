@@ -33,7 +33,7 @@ while True:
     file_path = "sensor_data_VL6180x.csv"
     file_exists = os.path.exists(file_path)
 
-    with open(file_path, "a", newline='') as file:
+    with open(file_path, "w", newline='') as file:
 
         writer = csv.writer(file)
         if not file_exists:
