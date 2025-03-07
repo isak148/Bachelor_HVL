@@ -2,6 +2,8 @@ from mpu6050 import mpu6050
 from time import sleep 
 import math
 import time
+import os
+import csv
 
 #import smbus2
 
@@ -196,4 +198,16 @@ if __name__ == "__main__":
             print("svømmer")
         else: 
             print("flyter")
+            
+        file_path = "sensor_data.csv"
+        file_exists = os.path.exists(file_path)
+
+        with open(file_path, "a", newline='') as file:
+            writer = csv.writer(file)
+            if not file_exists:
+                writer.writerow(["Accelerometer x", "Accelerometer y", "Accelerometer z", 
+                                "Gyroscope x", "Gyroscope y", "Gyroscope z"])
+
+            writer.writerow([accel_data['x'], accel_data['y'], accel_data['z'], 
+                            gyro_data['x'], gyro_data['y'], gyro_data['z'],])
         sleep(0.01)
