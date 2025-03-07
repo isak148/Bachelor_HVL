@@ -4,7 +4,7 @@
 # Demo of reading the range from the VL6180x distance sensor in
 # continuous mode
 
-import adafruit_vl6180x
+from VL6180X.examples import adafruit_vl6180x
 import time
 import csv
 import os
