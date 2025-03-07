@@ -34,6 +34,7 @@ while True:
     file_exists = os.path.exists(file_path)
 
     with open(file_path, "a", newline='') as file:
+        
         writer = csv.writer(file)
         if not file_exists:
             writer.writerow(["Range"])

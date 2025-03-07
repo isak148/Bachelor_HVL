@@ -50,14 +50,14 @@ while True:
                 sensor.temperature(), # Default is degrees C (no arguments)
                 sensor.temperature(ms5837.UNITS_Farenheit))) # Request Farenheit
 
-                file_path = "sensor_data_VL6180x.csv"
+                file_path = "sensor_data_MS5837.csv"
                 file_exists = os.path.exists(file_path)
 
                 with open(file_path, "a", newline='') as file:
                         writer = csv.writer(file)
                         if not file_exists:
                                 writer.writerow(["pressure","temperature"])
-                        writer.writerow()
+                        writer.writerow([sensor.pressure(), sensor.temperature()])
                 time.sleep(0.5)
         else:
                 print("Sensor read failed!")
