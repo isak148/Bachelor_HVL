@@ -44,11 +44,13 @@ time.sleep(5)
 # Spew readings
 while True:
         if sensor.read():
-                print(("P: %0.1f mbar  %0.3f psi\tT: %0.2f C  %0.2f F") % (
+                print(("P: %0.1f mbar  %0.3f psi\tT: %0.2f C  %0.2f F\tDepth: %.3f m (freshwater)  %.3f m (saltwater)") % (
                 sensor.pressure(), # Default is mbar (no arguments)
                 sensor.pressure(ms5837.UNITS_psi), # Request psi
                 sensor.temperature(), # Default is degrees C (no arguments)
-                sensor.temperature(ms5837.UNITS_Farenheit))) # Request Farenheit
+                sensor.temperature(ms5837.UNITS_Farenheit),
+                freshwaterDepth,
+                saltwaterDepth)) # Request Farenheit
 
                 file_path = "sensor_data_MS5837.csv"
                 file_exists = os.path.exists(file_path)
@@ -56,8 +58,8 @@ while True:
                 with open(file_path, "a", newline='') as file:
                         writer = csv.writer(file)
                         if not file_exists:
-                                writer.writerow(["pressure","temperature"])
-                        writer.writerow([sensor.pressure(), sensor.temperature()])
+                                writer.writerow(["pressure","temperature","Depth"])
+                        writer.writerow([sensor.pressure(), sensor.temperature(),freshwaterDepth])
                 time.sleep(0.5)
         else:
                 print("Sensor read failed!")
