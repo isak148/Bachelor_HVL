@@ -22,17 +22,29 @@ def funksjon3():
     print("Funksjon 3 er ferdig")
     time.sleep(1)
 
+def oppstart():
 
-tred1 = threading.Thread(target=funksjon1)
-tred2 = threading.Thread(target=funksjon2)
-tred3 = threading.Thread(target=funksjon3)
+    tred1 = threading.Thread(target=funksjon1)
+    tred2 = threading.Thread(target=funksjon2)
+    
 
-tred1.start()
-tred3.start()
-tred2.start()
+    tred1.start()
+    
+    tred2.start()
 
-tred1.join()
-tred2.join()
-tred3.join()
+    tred1.join()
+    tred2.join()
+  
 
-print("Hovedtråd ferdig")
+    print("Hovedtråd ferdig")
+    
+#tanke for oppstart
+""" 
+def hovud():
+    tred3 = threading.Thread(target=funksjon3)
+    tred3.start()
+    tred3.join()
+
+    if sensor.pressure == 1100:
+        oppstart()    
+"""    
