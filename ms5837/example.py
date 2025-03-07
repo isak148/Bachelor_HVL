@@ -1,6 +1,8 @@
 #!/usr/bin/python
 import ms5837
 import time
+import csv
+import os
 
 #sensor = ms5837.MS5837_30BA() # Default I2C bus is 1 (Raspberry Pi 3)
 #sensor = ms5837.MS5837_30BA(0) # Specify I2C bus
@@ -47,6 +49,15 @@ while True:
                 sensor.pressure(ms5837.UNITS_psi), # Request psi
                 sensor.temperature(), # Default is degrees C (no arguments)
                 sensor.temperature(ms5837.UNITS_Farenheit))) # Request Farenheit
+
+                file_path = "sensor_data_VL6180x.csv"
+                file_exists = os.path.exists(file_path)
+
+                with open(file_path, "a", newline='') as file:
+                        writer = csv.writer(file)
+                        if not file_exists:
+                                writer.writerow(["pressure","temperature"])
+                        writer.writerow()
                 time.sleep(0.5)
         else:
                 print("Sensor read failed!")
