@@ -5,6 +5,7 @@ import adafruit_ads1x15.analog_in as AnalogIn
 import board
 import busio
 import numpy as np
+import math
 
 # Opprett I2C-bussen
 i2c = busio.I2C(board.SCL, board.SDA)
@@ -16,11 +17,12 @@ adc = ADS1015.ADS1015(i2c)
 channel = AnalogIn.AnalogIn(adc, ADS1015.P0)  # P0 tilsvarer kanal 0
 
 # Variabler for plotting og pulsmåling
-sample_rate = 250  # Prøver per sekund (juster om nødvendig)
-buffer_size = 2500  # 10 sekunder med data
+sample_rate = 3 # Prøver per sekund (juster om nødvendig)
+buffer_size = 2500000  # 10 sekunder med data
 data_buffer = np.zeros(buffer_size)
 time_buffer = np.zeros(buffer_size)
 pulse_history = []
+pulse = 0
 
 def get_adc_value():
     return channel.value #Bruker .value for og hente ut verdien
@@ -41,7 +43,7 @@ def calculate_pulse(data, sample_rate):
                 return np.mean(pulse_history)
             else:
                 return None
-
+"""
 def update_plot():
     plt.clf()
     plt.plot(time_buffer, data_buffer)
@@ -51,7 +53,7 @@ def update_plot():
     if pulse is not None:
       plt.text(0.05, 0.95, f'Estimert Puls: {pulse:.2f} BPM', transform=plt.gca().transAxes)
     plt.pause(0.01)
-
+"""
 # Hovedløkke
 try:
     start_time = time.time()
@@ -61,9 +63,11 @@ try:
         time.sleep(1 / sample_rate)
         if i > sample_rate: #Måles ikke puls før det har gått et sekund.
           pulse = calculate_pulse(data_buffer[0:i], sample_rate)
-
-        if i % (sample_rate / 2) == 0:  # Oppdater plottet hvert halve sekund
-            update_plot()
+        print(f"BMP:{pulse}, {data_buffer[i]}")
+#
+ 
+#       if i % (sample_rate / 2) == 0:  # Oppdater plottet hvert halve sekund
+#            update_plot()
 except KeyboardInterrupt:
     print('Avslutter...')
     plt.close()
