@@ -1,10 +1,14 @@
 import time
-import matplotlib.pyplot as plt
-import Adafruit_ADS1x15
+import board
+import busio
+import matplotlib.pylab as plt
+import adafruit_ads1x15
+import adafruit_ads1x15.ads1015
+from adafruit_ads1x15.analog_in import AnalogIn
 import numpy as np
 
+ADC = adafruit_ads1x15()
 # ADS1015 konfigurasjon
-ADC = Adafruit_ADS1x15.ADS1015()
 GAIN = 1  # Juster om nødvendig
 CHANNEL = 0  # Koble AD8232 til kanal 0
 
