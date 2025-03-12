@@ -17,7 +17,7 @@ adc = ADS1015.ADS1015(i2c)
 channel = AnalogIn.AnalogIn(adc, ADS1015.P0)  # P0 tilsvarer kanal 0
 
 # Variabler for plotting og pulsmåling
-sample_rate = 3 # Prøver per sekund (juster om nødvendig)
+sample_rate = 3# Prøver per sekund (juster om nødvendig)
 buffer_size = 2500000  # 10 sekunder med data
 data_buffer = np.zeros(buffer_size)
 time_buffer = np.zeros(buffer_size)
@@ -25,7 +25,7 @@ pulse_history = []
 pulse = 0
 
 def get_adc_value():
-    return channel.value #Bruker .value for og hente ut verdien
+    return channel.value#Bruker .value for og hente ut verdien
 
 def calculate_pulse(data, sample_rate):
     # Enkel pulsmåling: Teller topper i signalet
@@ -38,7 +38,7 @@ def calculate_pulse(data, sample_rate):
             if mean_time_diff > 0:
                 pulse = 60 / mean_time_diff
                 pulse_history.append(pulse)
-                if len(pulse_history) > 10: # Tar et gjennomsnitt av de 10 siste pulsene.
+                if len(pulse_history) > 25: # Tar et gjennomsnitt av de 10 siste pulsene.
                   pulse_history.pop(0)
                 return np.mean(pulse_history)
             else:
