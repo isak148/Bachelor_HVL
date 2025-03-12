@@ -75,18 +75,19 @@ try:
         # ✅ Print BPM every 1 second (with smoother updates)
         if time.time() - last_print_time >= 1:
             last_print_time = time.time()
-            if pulse:
-                print(f"Stable BPM: {pulse:.1f}")
-                file_path = "sensor_data_ad8232.csv"
-                file_exists = os.path.exists(file_path)
+            file_path = "sensor_data_ad8232.csv"
+            file_exists = os.path.exists(file_path)
 
-                with open(file_path, "w", newline='') as file:
+            with open(file_path, "a", newline='') as file:
+                if pulse:
+                    print(f"Stable BPM: {pulse:.1f}")
+
                     writer = csv.writer(file)
                     if not file_exists:
-                        writer.writerow(["BPM"])
-                    writer.writerow([pulse])
-            else:
-                print("Measuring...")
+                        writer.writerow(["BPM","channel value"])
+                    writer.writerow([pulse, channel.value])
+                else:
+                    print("Measuring...")
 
         time.sleep(1 / sample_rate)  # ✅ Matches sampling rate
 
