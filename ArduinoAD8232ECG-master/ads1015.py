@@ -1,16 +1,19 @@
 import time
+import matplotlib.pyplot as plt
+import adafruit_ads1x15.ads1015 as ADS1015
+import adafruit_ads1x15.analog_in as AnalogIn
 import board
 import busio
-import matplotlib.pylab as plt
-import adafruit_ads1x15
-import adafruit_ads1x15.ads1015
-from adafruit_ads1x15.analog_in import AnalogIn
 import numpy as np
 
-ADC = adafruit_ads1x15()
-# ADS1015 konfigurasjon
-GAIN = 1  # Juster om nødvendig
-CHANNEL = 0  # Koble AD8232 til kanal 0
+# Opprett I2C-bussen
+i2c = busio.I2C(board.SCL, board.SDA)
+
+# Opprett ADS1015-objektet
+adc = ADS1015.ADS1015(i2c)
+
+# Opprett en analog inngangskanal
+channel = AnalogIn.AnalogIn(adc, ADS1015.P0)  # P0 tilsvarer kanal 0
 
 # Variabler for plotting og pulsmåling
 sample_rate = 250  # Prøver per sekund (juster om nødvendig)
@@ -20,7 +23,7 @@ time_buffer = np.zeros(buffer_size)
 pulse_history = []
 
 def get_adc_value():
-    return ADC.read_adc(CHANNEL, gain=GAIN)
+    return channel.value #Bruker .value for og hente ut verdien
 
 def calculate_pulse(data, sample_rate):
     # Enkel pulsmåling: Teller topper i signalet
