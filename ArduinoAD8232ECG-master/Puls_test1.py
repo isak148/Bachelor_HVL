@@ -12,27 +12,30 @@ adc = ADS1015.ADS1015(i2c)
 channel = AnalogIn.AnalogIn(adc, ADS1015.P0)
 
 # ✅ Sampling Configuration
-sample_rate = 100  # ✅ Higher sample rate for real-time response
+sample_rate = 100  # ✅ High sample rate for real-time response
 buffer_size = sample_rate * 3  # ✅ Rolling buffer (last 3 sec)
 data_buffer = np.zeros(buffer_size)
 pulse_history = []  # Stores recent BPM values
 
 def get_adc_value():
-    """ Read ADC and convert to voltage. """
-    return (channel.value * 3.3) / 32767  # Convert ADC to voltage
+    """ Read ADC and convert to voltage. Ignore zero values. """
+    value = (channel.value * 3.3) / 32767  # Convert ADC to voltage
+    return value if value > 0 else None  # ✅ Ignore `0` values
 
 def calculate_pulse(data, sample_rate):
     """ Compute continuous heart rate (BPM) with real-time updates """
     global pulse_history
 
-    if len(data) < sample_rate:  # Need at least 1 sec of data
+    # ✅ Filter out zero values
+    filtered_data = data[data > 0]
+    if len(filtered_data) < sample_rate:  # Need at least 1 sec of valid data
         return None
 
     # ✅ Dynamic threshold: Adjusts based on signal variations
-    dynamic_threshold = np.mean(data) + 0.5 * np.std(data)
+    dynamic_threshold = np.mean(filtered_data) + 0.5 * np.std(filtered_data)
     
     # ✅ Detect peaks (heartbeats)
-    peaks, _ = scipy.signal.find_peaks(data, height=dynamic_threshold, distance=sample_rate * 0.5)
+    peaks, _ = scipy.signal.find_peaks(filtered_data, height=dynamic_threshold, distance=sample_rate * 0.5)
 
     if len(peaks) > 1:
         # ✅ Compute RR intervals (time between beats)
@@ -53,9 +56,11 @@ try:
     start_time = time.time()
 
     while True:
-        # Shift data to keep buffer size constant
-        data_buffer[:-1] = data_buffer[1:]
-        data_buffer[-1] = get_adc_value()  # Read new ADC value
+        # Get new ADC value
+        new_value = get_adc_value()
+        if new_value:  # ✅ Only add non-zero values
+            data_buffer[:-1] = data_buffer[1:]
+            data_buffer[-1] = new_value  
 
         if len(data_buffer) > sample_rate:  # ✅ Wait at least 1 sec before calculating BPM
             pulse = calculate_pulse(data_buffer, sample_rate)
