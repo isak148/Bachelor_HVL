@@ -5,6 +5,8 @@ import board
 import busio
 import numpy as np
 import scipy.signal
+import csv
+import os
 
 # ✅ Set up I2C and ADC
 i2c = busio.I2C(board.SCL, board.SDA)
@@ -35,7 +37,7 @@ def calculate_pulse(data, sample_rate):
     dynamic_threshold = np.mean(filtered_data) + 0.5 * np.std(filtered_data)
 
     # ✅ Detect peaks (heartbeats)
-    peaks, _ = scipy.signal.find_peaks(filtered_data, height=dynamic_threshold, distance=sample_rate * 0.6)
+    peaks, _ = scipy.signal.find_peaks(filtered_data, height=dynamic_threshold, distance=sample_rate * 0.75)
 
     if len(peaks) > 2:  # ✅ Ignore random noise
         # ✅ Compute RR intervals (time between beats)
@@ -51,7 +53,7 @@ def calculate_pulse(data, sample_rate):
                 pulse_history.pop(0)
 
             # ✅ Apply smoothing (70% new value, 30% rolling average)
-            return 0.7 * bpm + 0.3 * np.mean(pulse_history)
+            return 0.4 * bpm + 0.6* np.mean(pulse_history)
 
     return None  # No valid heart rate detected
 
@@ -75,6 +77,14 @@ try:
             last_print_time = time.time()
             if pulse:
                 print(f"Stable BPM: {pulse:.1f}")
+                file_path = "sensor_data_ad8232.csv"
+                file_exists = os.path.exists(file_path)
+
+                with open(file_path, "w", newline='') as file:
+                    writer = csv.writer(file)
+                    if not file_exists:
+                        writer.writerow(["BPM"])
+                    writer.writerow([pulse])
             else:
                 print("Measuring...")
 
