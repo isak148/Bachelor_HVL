@@ -55,11 +55,13 @@ def oppstart():
     tred2.start()
     tred3.start()
     tred4.start()
+    tred5.start()   
 
     tred1.join()
     tred2.join()
     tred3.join()
     tred4.join()
+    tred5.join()
 
     logging.info("Hovedtråd ferdig")
 
@@ -75,4 +77,41 @@ def hovud():
 
     if sensor.pressure == 1100:
         oppstart()    
+
+
+
+        def flyter(neon verdier):
+            if noen verdier == område 
+                return true
+            else:
+                return false
+            return string
+        def svømmer(neon verdier):
+            if noen verdier == område 
+                return true            
+                else:
+                return false
+            return string
+        def dykker(neon verdier):
+            if noen verdier == område 
+                return true
+            else:
+                return false
+            return string
+        
+        def drukner(neon verdier):
+            if noen verdier == område
+                return true
+            else:
+                return false
+            return string
+            
+    def oppstart(): 
+        if def flyter(noen verider)
+            print("flyter") 
+
+        def svømmer
+        def dykker
+        def drukner
+
 """    

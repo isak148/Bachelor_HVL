@@ -165,6 +165,22 @@ class MPU6050_Orientation(mpu6050):
 
         return {'roll': angle_x, 'pitch': angle_y}
 
+    def gi_status_aks():
+
+        mpu = MPU6050_Orientation(0x68)
+        accel_data = mpu.get_accel_data(g=True)
+        tot_G = accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2
+        tot_G = math.sqrt(tot_G)
+        
+        orientation = mpu.get_orientation()
+        roll = orientation['roll']
+        pitch = orientation['pitch']
+
+
+        
+        
+
+#vi trenger ikkje denne da vi har en egen funksjon for å hente data
 
 if __name__ == "__main__":
     #sensor = mpu6050(0x68)
