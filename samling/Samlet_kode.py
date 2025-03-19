@@ -38,11 +38,18 @@ def data_analyse():
     logging.info("data analyse er ferdig")
     time.sleep(0.1)
 
+def ads1015():
+    logging.info("Funksjon 5 startet")
+    ny_terminal("/home/Bachelor/Bachelor_HVL/ArduinoAD8232ECG-master/ads1015.py")
+    logging.info("Funksjon 5 er ferdig")
+    time.sleep(0.1)
+
 def oppstart():
     tred1 = threading.Thread(target=vl6180x)
     tred2 = threading.Thread(target=MPU6050)
     tred3 = threading.Thread(target=MS5837)
     tred4 = threading.Thread(target=data_analyse)
+    tred5 = threading.Thread(target=ads1015)
 
     tred1.start()
     tred2.start()
