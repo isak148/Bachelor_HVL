@@ -165,16 +165,21 @@ class MPU6050_Orientation(mpu6050):
 
         return {'roll': angle_x, 'pitch': angle_y}
 
-    def gi_status_aks():
+    def gi_status_aks(self):
+        
+        mpu = MPU6050_Orientation(0x68) # opretter nytt MPU objekt
 
-        mpu = MPU6050_Orientation(0x68)
         accel_data = mpu.get_accel_data(g=True)
-        tot_G = accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2
-        tot_G = math.sqrt(tot_G)
+        tot_G = math.sqrt(accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2)
+        
         
         orientation = mpu.get_orientation()
         roll = orientation['roll']
         pitch = orientation['pitch']
+        
+        data = {tot_G, roll, pitch}
+
+        return data 
 
 
         
