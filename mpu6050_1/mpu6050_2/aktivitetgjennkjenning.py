@@ -2,17 +2,16 @@ from mpu6050 import mpu6050
 from time import sleep 
 import math
 import time
-
+import numpy as np
+from scipy.fft import fft
 import os
 import csv
-from collections import deque
-import numpy as np
 
 #import smbus2
 
 class MPU6050_Orientation(mpu6050):
-    def __init__(self, address, bus=1):
-        super(). __init__(address, bus)
+    def __init__(self, address, bus=1, window_size=32):  # Legg til window_size
+        super().__init__(address, bus)
 
         #Justere følsomhet skala(grader/s) for gyro
         self.set_gyro_range(self.GYRO_RANGE_250DEG)
@@ -39,12 +38,10 @@ class MPU6050_Orientation(mpu6050):
         self.required_stable_count = 20
         self.threshold = 0.05
 
-        # variabler for FFS 
-        self.sample_rate = 100  # Hz
-        self.window_size = self.sample_rate * 5  # 5 sekunder med data
-        self.data_buffer = deque(maxlen=self.window_size)
-        self.last_periodicity_status = None
-
+        self.window_size = window_size
+        self.accel_z_buffer # Buffer for z-akselerasjon for analyse
+        self.time_buffer # Buffer for tidsstempel
+        self.sample_rate = 100  # Hz (tilnærmet)
 
 
 
@@ -111,9 +108,6 @@ class MPU6050_Orientation(mpu6050):
         # Beregn vinkel fra akselerometer i grader
         accel_angle_x = math.atan2(accel_data['y'], accel_data['x']) * (180/math.pi)
         accel_angle_y = math.atan2(-accel_data['x'], accel_data['z']) * (180/math.pi)
-        
-        
-        
        
         #sjekker om en av aksene er stabil på en 1G
         if abs(accel_data['x']) > (1.0 - self.threshold) and abs(accel_data['x']) < (1.0 + self.threshold):
@@ -174,100 +168,110 @@ class MPU6050_Orientation(mpu6050):
 
 
         return {'roll': angle_x, 'pitch': angle_y}
-    
 
-    def is_periodic(self, signal, threshold_ratio=0.1, min_significant_freqs=1):
-        """Vurderer om et signal inneholder et periodisk mønster basert på FFT-analyse."""
-        N = len(signal)
-        fft_values = np.fft.rfft(signal)
-        fft_magnitude = np.abs(fft_values) / N
-        threshold = threshold_ratio * np.max(fft_magnitude)
-        significant_freqs = np.sum(fft_magnitude > threshold)
-        return significant_freqs >= min_significant_freqs
+    def gi_status_aks():
 
-    def gi_status_aks(self):
-        
-
+        mpu = MPU6050_Orientation(0x68)
         accel_data = mpu.get_accel_data(g=True)
-        tot_G = math.sqrt(accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2)
-        
+        tot_G = accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2
+        tot_G = math.sqrt(tot_G)
         
         orientation = mpu.get_orientation()
         roll = orientation['roll']
         pitch = orientation['pitch']
-        
-        #beregning av total_G jevn/ujevn, dette er for å finne om akselerasjonen har en "rytme" om man svømmer.
-        self.data_buffer.append(tot_G)
-
-        if len(self.data_buffer) == self.window_size:
-            is_periodic = self.is_periodic(list(self.data_buffer))
-            self.last_periodicity_status = is_periodic
-
-        # skal retunere total_G, roll, pitch, bool: gjevn = true, ujevn = false
-        return {
-            'total_G': tot_G,
-            'roll': roll,
-            'pitch': pitch,
-            'is_periodic': self.last_periodicity_status
-        }
-
-         
 
 
         
         
 
-#vi trenger ikkje denne da vi har en egen funksjon for å hente data
+    def get_accel_z_change(self):
+            """Beregn endring i akselerasjon i z-retningen."""
+            if len(self.accel_z_buffer) < 2:
+                return 0  # Ikke nok data
+            return (self.accel_z_buffer[-1] - self.accel_z_buffer[-2]) / (self.time_buffer[-1] - self.time_buffer[-2])
+
+    def get_dominant_frequency(self, data):
+        """Finn den dominerende frekvensen i dataene."""
+        if len(data) < self.window_size:
+            return 0  # Ikke nok data
+        
+        # Filtrer ut NaN-verdier
+        data = np.nan_to_num(data)
+        
+        # Utfør FFT
+        fft_data = fft(data)
+        
+        # Finn den dominerende frekvensen
+        frequencies = np.fft.fftfreq(len(data), 1/self.sample_rate)
+        dominant_frequency_index = np.argmax(np.abs(fft_data[1:len(data)//2])) + 1  # Ignorer DC-komponenten
+        dominant_frequency = frequencies[dominant_frequency_index]
+        return abs(dominant_frequency)
+
+def gjenkjenn_aktivitet(orientation, accel_data, gyro_data, accel_z_change, dominant_frequency,
+                       threshold_orientering=20.0, threshold_accel_variasjon=0.2,
+                       threshold_dominant_frequency=0.5):
+    """
+    Gjenkjenner svømmeaktivitet basert på orientering, akselerasjonsdata, og frekvensanalyse.
+
+    Args:
+        orientation (dict): En ordbok med 'roll' og 'pitch' orienteringsverdier.
+        accel_data (dict): En ordbok med akselerometerdata ('x', 'y', 'z').
+        gyro_data (dict): En ordbok med gyroskopdata ('x', 'y', 'z').
+        accel_z_change (float): Endring i akselerasjon i z-retningen.
+        dominant_frequency (float): Den dominerende frekvensen i bevegelsen.
+        threshold_orientering (float): Terskelverdi for orienteringsendring for å vurdere bevegelse.
+        threshold_accel_variasjon (float): Terskelverdi for akselerasjonsvariasjon for å vurdere bevegelse.
+        threshold_dominant_frequency (float): Terskelverdi for dominerende frekvens.
+
+    Returns:
+        str: Den gjenkjente aktiviteten ('Flyting', 'Svømming', 'Svømme nedover', 'Svømme oppover', eller 'Ukjent').
+    """
+
+    pitch = orientation['pitch']
+    roll = orientation['roll']
+    total_accel = math.sqrt(accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2)
+
+    # Sjekk for flyting
+    if abs(pitch) < threshold_orientering and abs(roll) < threshold_orientering and abs(total_accel - 1) < 0.1:
+        return 'Flyting'
+
+    # Sjekk for svømming (inkluderer frekvensanalyse)
+    elif (abs(pitch) > threshold_orientering or abs(roll) > threshold_orientering) and dominant_frequency > threshold_dominant_frequency:
+        return 'Svømming'
+
+    # Sjekk for svømme nedover/oppover (inkluderer akselerasjonsendring)
+    elif pitch > 0 and accel_z_change < -threshold_accel_variasjon:  # Forenklet sjekk for "nedover"
+        return 'Svømme nedover'
+    elif pitch < 0 and accel_z_change > threshold_accel_variasjon:  # Forenklet sjekk for "oppover"
+        return 'Svømme oppover'
+
+    else:
+        return 'Ukjent'
 
 if __name__ == "__main__":
-    #sensor = mpu6050(0x68)
     mpu = MPU6050_Orientation(0x68)
-    
-    while True:
-        status = mpu.gi_status_aks()
-        print(f"Total G: {status['total_G']}")
-        print(f"Roll: {status['roll']}")
-        print(f"Pitch: {status['pitch']}")
-        print(f"Periodisitet: {'Jevn' if status['is_periodic'] else 'Ujevn'}")
-
-    
-    
-    
-    
-    
-    
-'''
-    #sensor = mpu6050(0x68)
-    mpu = MPU6050_Orientation(0x68)
-    
-
-
 
     while True:
         accel_data = mpu.get_accel_data(g=True)
         gyro_data = mpu.get_gyro_data()
-        #temp = sensor.get_temp()
         orientation = mpu.get_orientation()
+        timestamp = time.time()
 
-        print("Accelerometer data")
-        print("x: " + str(accel_data['x']-mpu.accel_offset['x']))
-        print("y: " + str(accel_data['y']-mpu.accel_offset['y']))
-        print("z: " + str(accel_data['z']-mpu.accel_offset['z']))
+        # Oppdater buffere for frekvensanalyse og akselerasjonsendring
+        mpu.accel_z_buffer.append(accel_data['z'])
+        mpu.time_buffer.append(timestamp)
 
-        print("Gyroscope data")
-        print("x: " + str(gyro_data['x']- mpu.gyro_offset['x']))
-        print("y: " + str(gyro_data['y']- mpu.gyro_offset['y']))
-        print("z: " + str(gyro_data['z']- mpu.gyro_offset['z']))
+        if len(mpu.accel_z_buffer) > mpu.window_size:
+            mpu.accel_z_buffer.pop(0)
+            mpu.time_buffer.pop(0)
 
-        #print("Temp: " + str(temp) + " C")
-    
-    
-        print(f"Roll: {orientation['roll']:.2f}, Pitch: {orientation['pitch']:.2f}")
+        # Beregn akselerasjonsendring og dominerende frekvens
+        accel_z_change = mpu.get_accel_z_change()
+        dominant_frequency = mpu.get_dominant_frequency(mpu.accel_z_buffer)
 
-        if abs(orientation['pitch']) > 45.0:
-            print("svømmer")
-        else: 
-            print("flyter")
+        # Gjenkjenn aktivitet
+        aktivitet = gjenkjenn_aktivitet(orientation, accel_data, gyro_data, accel_z_change, dominant_frequency)
+        print(f"Aktivitet: {aktivitet}, Roll: {orientation['roll']:.2f}, Pitch: {orientation['pitch']:.2f}, Dominant Freq: {dominant_frequency:.2f}, Accel Z Change: {accel_z_change:.2f}")
 
         file_path = "sensor_data.csv"
         file_exists = os.path.exists(file_path)
@@ -281,4 +285,3 @@ if __name__ == "__main__":
             writer.writerow([accel_data['x'], accel_data['y'], accel_data['z'], 
                             gyro_data['x'], gyro_data['y'], gyro_data['z'],orientation['roll'],orientation['pitch']])
         sleep(0.01)
-'''
