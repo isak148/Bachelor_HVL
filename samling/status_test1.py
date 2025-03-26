@@ -5,6 +5,7 @@ class status:
 
     def __init__(self):
         self.variabler = {} 
+        
 
     
     def get_data_aks(self):
@@ -65,29 +66,29 @@ if __name__ == "__main__":
 
        while(ivann):
             data_aks = thread get data_aks
-            data_LFR_Preasure = threadget data
+            data_LFR_Preasure = thread get data
             data_puls = thread get_data 
            
 
-           if ( ) # tidsstyrt hnor ofte vi ønsker og oppdatere status
-            if (Flyter()):
-                    printline("Flyter")
-            
-            elif(Svømmer()):
-                    printline("Svømmer")
+            if (True): # Denne må være tidsstyrt hvor ofte vi ønsker og oppdatere status, kanskje 1 gang i sekundet?
+                if (Flyter()):
+                        printline("Flyter")
+                
+                elif(Svømmer()):
+                        printline("Svømmer")
 
-            elif(Dykker()):
-                    printline("Dykker")
+                elif(Dykker()):
+                        printline("Dykker")
+                
+                elif(Svømmer_opp()):
+                        printline("Svømmer_opp")
+                
+                elif(Drukner()):
+                        printline("Drukner")
+                else:
+                        printline("Uvisst status")
             
-            elif(Svømmer_opp()):
-                    printline("Svømmer_opp")
-            
-            elif(Drukner()):
-                    printline("Drukner")
-            else:
-                    printline("Uvisst status")
-            
-                ivann = aktivert()
+            ivann = aktivert() # Deaktiverer status oppdatering og programm program kall 
 
             
 

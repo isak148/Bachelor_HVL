@@ -4,6 +4,8 @@ import math
 import time
 import os
 import csv
+from collections import deque
+import numpy as np
 
 #import smbus2
 
@@ -35,6 +37,13 @@ class MPU6050_Orientation(mpu6050):
         self.stable_count_z = 0
         self.required_stable_count = 20
         self.threshold = 0.05
+
+        # variabler for FFS 
+        self.sample_rate = 100  # Hz
+        self.window_size = self.sample_rate * 5  # 5 sekunder med data
+        self.data_buffer = deque(maxlen=self.window_size)
+        self.last_periodicity_status = None
+
 
 
 
@@ -164,10 +173,19 @@ class MPU6050_Orientation(mpu6050):
 
 
         return {'roll': angle_x, 'pitch': angle_y}
+    
+
+    def is_periodic(self, signal, threshold_ratio=0.1, min_significant_freqs=1):
+        """Vurderer om et signal inneholder et periodisk mønster basert på FFT-analyse."""
+        N = len(signal)
+        fft_values = np.fft.rfft(signal)
+        fft_magnitude = np.abs(fft_values) / N
+        threshold = threshold_ratio * np.max(fft_magnitude)
+        significant_freqs = np.sum(fft_magnitude > threshold)
+        return significant_freqs >= min_significant_freqs
 
     def gi_status_aks(self):
         
-        mpu = MPU6050_Orientation(0x68) # opretter nytt MPU objekt
 
         accel_data = mpu.get_accel_data(g=True)
         tot_G = math.sqrt(accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2)
@@ -177,9 +195,22 @@ class MPU6050_Orientation(mpu6050):
         roll = orientation['roll']
         pitch = orientation['pitch']
         
-        data = {tot_G, roll, pitch}
+        #beregning av total_G jevn/ujevn, dette er for å finne om akselerasjonen har en "rytme" om man svømmer.
+        self.data_buffer.append(tot_G)
 
-        return data 
+        if len(self.data_buffer) == self.window_size:
+            is_periodic = self.is_periodic(list(self.data_buffer))
+            self.last_periodicity_status = is_periodic
+
+        # skal retunere total_G, roll, pitch, bool: gjevn = true, ujevn = false
+        return {
+            'total_G': tot_G,
+            'roll': roll,
+            'pitch': pitch,
+            'is_periodic': self.last_periodicity_status
+        }
+
+         
 
 
         
@@ -188,6 +219,23 @@ class MPU6050_Orientation(mpu6050):
 #vi trenger ikkje denne da vi har en egen funksjon for å hente data
 
 if __name__ == "__main__":
+    #sensor = mpu6050(0x68)
+    mpu = MPU6050_Orientation(0x68)
+    
+    while True:
+        status = mpu.gi_status_aks()
+        print(f"Total G: {status['total_G']}")
+        print(f"Roll: {status['roll']}")
+        print(f"Pitch: {status['pitch']}")
+        print(f"Periodisitet: {'Jevn' if status['is_periodic'] else 'Ujevn'}")
+
+    
+    
+    
+    
+    
+    
+'''
     #sensor = mpu6050(0x68)
     mpu = MPU6050_Orientation(0x68)
     
@@ -232,3 +280,4 @@ if __name__ == "__main__":
             writer.writerow([accel_data['x'], accel_data['y'], accel_data['z'], 
                             gyro_data['x'], gyro_data['y'], gyro_data['z'],orientation['roll'],orientation['pitch']])
         sleep(0.01)
+'''
