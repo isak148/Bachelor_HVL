@@ -6,6 +6,8 @@ import board
 import busio
 from scipy.signal import butter, filtfilt, find_peaks
 from ecgdetectors import Detectors
+import csv
+import os 
 
 
 # Konfigurasjon
@@ -27,6 +29,14 @@ def bandpass_filter(data, lowcut=0.5, highcut=3, fs=100, order=4):
     return filtfilt(b, a, data)
 
 def get_adc_value():
+    file_path = "sensor_data_ECG.csv"
+    file_exists = os.path.exists(file_path)
+
+    with open(file_path, "a", newline='') as file:
+        writer = csv.writer(file)
+        if not file_exists:
+                writer.writerow(["signal"])
+        writer.writerow([channel.value])
     return channel.value
 
 def calculate_bpm_time_domain(filtered_data, fs):
@@ -61,7 +71,7 @@ try:
         filtered = bandpass_filter(raw_data, lowcut=0.7, highcut=3.0, fs=sample_rate)
         bpm = calculate_bpm_time_domain(filtered, sample_rate)
 
-        if bpm is not None and 40 < bpm < 180:
+        if bpm is not None and 40 < bpm < 220:
             smoothed = smooth_bpm(bpm, bpm_history)
             print(f"Puls estimert: {smoothed:.1f} BPM")
         else:
