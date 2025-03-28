@@ -237,7 +237,7 @@ if __name__ == "__main__":
         # Gjenkjenn aktivitet
         aktivitet = gjenkjenn_aktivitet(orientation, accel_data, gyro_data)
         print(f"Aktivitet: {aktivitet}")
-
+        '''
         # Skriv data til CSV-fil (med aktivitet)
         file_path = "sensor_data.csv"
         file_exists = os.path.exists(file_path)
@@ -249,4 +249,6 @@ if __name__ == "__main__":
                                 "Gyroscope x", "Gyroscope y", "Gyroscope z", "Roll", "Pitch", "Aktivitet"])  # Inkluder "Aktivitet"
             writer.writerow([time.time(), accel_data['x'], accel_data['y'], accel_data['z'],
                             gyro_data['x'], gyro_data['y'], gyro_data['z'], orientation['roll'], orientation['pitch'], aktivitet])  # Inkluder aktivitet
+
+'''
         sleep(0.01)

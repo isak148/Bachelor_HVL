@@ -1,0 +1,72 @@
+import time
+import numpy as np
+import board
+import busio
+import adafruit_ads1x15.ads1015 as ADS
+from adafruit_ads1x15.analog_in import AnalogIn
+from ecgdetectors import Detectors
+
+# Konfigurasjon
+SAMPLE_RATE = 100       # Hz
+DURATION_SEC = 5        # sekunder pr m�levindu
+bpm_history = []
+
+# I2C og ADC
+i2c = busio.I2C(board.SCL, board.SDA)
+ads = ADS.ADS1015(i2c)
+channel = AnalogIn(ads, ADS.P0)
+
+# Initialiser R-takk-detektor
+detectors = Detectors(SAMPLE_RATE)
+
+def read_signal(duration, sample_rate):
+    """Les signal fra ADS1015 i gitt tid"""
+    signal = []
+    start_time = time.time()
+    while (time.time() - start_time) < duration:
+        signal.append(channel.value)
+        time.sleep(1.0 / sample_rate)
+    return np.array(signal)
+
+def calculate_bpm_raw(ecg_signal, fs):
+    """Bruk Hamilton-detektor direkte p� ufiltrert signal"""
+    r_peaks = detectors.hamilton_detector(ecg_signal)
+
+    # Kun behold topper (ikke bunner) ved � sjekke at verdien er over snittet
+    r_peaks = [i for i in r_peaks if ecg_signal[i] > np.mean(ecg_signal)]
+
+    print(f"Antall R-takker (ufiltrert): {len(r_peaks)}")
+    for i in r_peaks:
+        print(f"  R @ {i} = {ecg_signal[i]}")
+
+    if len(r_peaks) > 1:
+        rr_intervals = np.diff(r_peaks) / fs
+        avg_rr = np.mean(rr_intervals)
+        bpm = 60 / avg_rr
+        return bpm
+    else:
+        return None
+
+def smooth_bpm(bpm, history, window=3):
+    history.append(bpm)
+    if len(history) > window:
+        history.pop(0)
+    return sum(history) / len(history)
+
+def main():
+    print("Starter EKG-m�ling (Hamilton-detektor p� ufiltrert signal)...")
+    try:
+        while True:
+            signal = read_signal(DURATION_SEC, SAMPLE_RATE)
+            bpm = calculate_bpm_raw(signal, SAMPLE_RATE)
+
+            if bpm is not None and 40 < bpm < 180:
+                bpm = smooth_bpm(bpm, bpm_history)
+                print(f"?? Estimert puls: {bpm:.1f} BPM\n")
+            else:
+                print("? Kunne ikke estimere puls.\n")
+    except KeyboardInterrupt:
+        print("Avslutter m�ling.")
+
+if __name__ == "__main__":
+    main()
