@@ -2,72 +2,56 @@ import time
 import numpy as np
 import board
 import busio
-import adafruit_ads1x15.ads1015 as ADS
-from adafruit_ads1x15.analog_in import AnalogIn
-from ecgdetectors import Detectors
-import scipy 
+import adafruit_ads1x15.ads1015 as ADS1015
+import adafruit_ads1x15.analog_in as AnalogIn
+from scipy.signal import find_peaks
 
-# Konfigurasjon
-SAMPLE_RATE = 100       # Hz
-DURATION_SEC = 5        # sekunder pr m�levindu
-bpm_history = []
+# --- Konfigurasjon ---
+SAMPLE_RATE = 100
+WINDOW_SEC = 5
+SAMPLES = SAMPLE_RATE * WINDOW_SEC
+MIN_RR_SEC = 0.27
+MIN_RR_SAMPLES = int(MIN_RR_SEC * SAMPLE_RATE)
+MIN_PEAK_HEIGHT = 26000  # justeres etter signalstyrke fra din sensor
 
-# I2C og ADC
+# Init ADC
 i2c = busio.I2C(board.SCL, board.SDA)
-ads = ADS.ADS1015(i2c)
-channel = AnalogIn(ads, ADS.P0)
+adc = ADS1015.ADS1015(i2c)
+channel = AnalogIn.AnalogIn(adc, ADS1015.P0)
 
-# Initialiser R-takk-detektor
-detectors = Detectors(SAMPLE_RATE)
+def read_signal(samples):
+    data = []
+    for _ in range(samples):
+        data.append(channel.value)
+        time.sleep(1 / SAMPLE_RATE)
+    return np.array(data)
 
-def read_signal(duration, sample_rate):
-    """Les signal fra ADS1015 i gitt tid"""
-    signal = []
-    start_time = time.time()
-    while (time.time() - start_time) < duration:
-        signal.append(channel.value)
-        time.sleep(1.0 / sample_rate)
-    return np.array(signal)
+def estimate_bpm_peaks(signal, fs):
+    # Finn topper over terskel
+    peaks, _ = find_peaks(signal, height=MIN_PEAK_HEIGHT, distance=MIN_RR_SAMPLES)
 
-def calculate_bpm_raw(ecg_signal, fs):
-    """Bruk Hamilton-detektor direkte p� ufiltrert signal"""
-    r_peaks = detectors.hamilton_detector(ecg_signal)
-
-    # Kun behold topper (ikke bunner) ved � sjekke at verdien er over snittet
-    r_peaks = [i for i in r_peaks if ecg_signal[i] > np.mean(ecg_signal)]
-
-    print(f"Antall R-takker (ufiltrert): {len(r_peaks)}")
-    for i in r_peaks:
-        print(f"  R @ {i} = {ecg_signal[i]}")
-
-    if len(r_peaks) > 1:
-        rr_intervals = np.diff(r_peaks) / fs
-        avg_rr = np.mean(rr_intervals)
-        bpm = 60 / avg_rr
-        return bpm
-    else:
+    if len(peaks) < 6:
         return None
 
-def smooth_bpm(bpm, history, window=3):
-    history.append(bpm)
-    if len(history) > window:
-        history.pop(0)
-    return sum(history) / len(history)
+    # Beregn RR-intervaller og sjekk at alle er gyldige
+    rr_intervals = np.diff(peaks) / fs
+    if any(rr < MIN_RR_SEC for rr in rr_intervals[:5]):
+        return None
 
-def main():
-    print("Starter EKG-m�ling (Hamilton-detektor p� ufiltrert signal)...")
-    try:
-        while True:
-            signal = read_signal(DURATION_SEC, SAMPLE_RATE)
-            bpm = calculate_bpm_raw(signal, SAMPLE_RATE)
+    avg_rr = np.mean(rr_intervals[:5])
+    bpm = 60 / avg_rr
+    return bpm
 
-            if bpm is not None and 40 < bpm < 220:
-                bpm = smooth_bpm(bpm, bpm_history)
-                print(f"?? Estimert puls: {bpm:.1f} BPM\n")
-            else:
-                print("? Kunne ikke estimere puls.\n")
-    except KeyboardInterrupt:
-        print("Avslutter m�ling.")
+# --- Hovedløkke ---
+try:
+    print("Starter måling med find_peaks...")
+    while True:
+        signal = read_signal(SAMPLES)
+        bpm = estimate_bpm_peaks(signal, SAMPLE_RATE)
 
-if __name__ == "__main__":
-    main()
+        if bpm:
+            print(f"✅ Estimert puls: {bpm:.1f} BPM")
+        else:
+            print("❌ Ingen gyldig puls (for få eller for tette topper).")
+except KeyboardInterrupt:
+    print("Avslutter måling.")
