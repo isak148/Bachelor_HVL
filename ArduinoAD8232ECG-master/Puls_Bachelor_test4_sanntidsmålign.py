@@ -5,7 +5,7 @@ import adafruit_ads1x15.ads1015 as ADS1015
 import adafruit_ads1x15.analog_in as AnalogIn
 
 # --- Konfigurasjon ---
-THRESHOLD = 26000
+THRESHOLD = 32000
 DEBOUNCE_TIME = 0.25  # sekunder for å unngå dobbelttelling (filter)
 
 # --- Init ADC ---

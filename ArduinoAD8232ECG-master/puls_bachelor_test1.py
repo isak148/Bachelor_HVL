@@ -21,7 +21,7 @@ i2c = busio.I2C(board.SCL, board.SDA)
 adc = ADS1015.ADS1015(i2c)
 channel = AnalogIn.AnalogIn(adc, ADS1015.P0)
 
-def bandpass_filter(data, lowcut=2.3, highcut=5, fs=100, order=4):
+def bandpass_filter(data, lowcut=0.5, highcut=5, fs=100, order=4):
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
