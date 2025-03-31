@@ -7,8 +7,8 @@ from adafruit_ads1x15.analog_in import AnalogIn
 from ecgdetectors import Detectors
 
 # Konfigurasjon
-SAMPLE_RATE = 50       # Hz
-DURATION_SEC = 8        # sekunder pr m�levindu
+SAMPLE_RATE = 100       # Hz
+DURATION_SEC = 5        # sekunder pr m�levindu
 bpm_history = []
 
 # I2C og ADC
