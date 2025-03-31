@@ -7,12 +7,12 @@ import adafruit_ads1x15.analog_in as AnalogIn
 from scipy.signal import find_peaks
 
 # --- Konfigurasjon ---
-SAMPLE_RATE = 100
+SAMPLE_RATE = 300
 WINDOW_SEC = 5
 SAMPLES = SAMPLE_RATE * WINDOW_SEC
-MIN_RR_SEC = 0.27
+MIN_RR_SEC = 0.3
 MIN_RR_SAMPLES = int(MIN_RR_SEC * SAMPLE_RATE)
-MIN_PEAK_HEIGHT = 26000  # justeres etter signalstyrke fra din sensor
+MIN_PEAK_HEIGHT = 27000 # justeres etter signalstyrke fra din sensor
 
 # Init ADC
 i2c = busio.I2C(board.SCL, board.SDA)
@@ -35,10 +35,10 @@ def estimate_bpm_peaks(signal, fs):
 
     # Beregn RR-intervaller og sjekk at alle er gyldige
     rr_intervals = np.diff(peaks) / fs
-    if any(rr < MIN_RR_SEC for rr in rr_intervals[:5]):
+    if any(rr < MIN_RR_SEC for rr in rr_intervals[0:]):
         return None
 
-    avg_rr = np.mean(rr_intervals[:5])
+    avg_rr = np.mean(rr_intervals[0:])
     bpm = 60 / avg_rr
     return bpm
 
