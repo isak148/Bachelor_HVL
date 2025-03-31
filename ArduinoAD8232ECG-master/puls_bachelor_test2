@@ -10,7 +10,7 @@ from scipy.signal import find_peaks
 SAMPLE_RATE = 100             # Hz
 DURATION_SEC = 5              # sekunder
 TOTAL_SAMPLES = SAMPLE_RATE * DURATION_SEC
-MIN_PEAK_HEIGHT = 26000       # justeres etter behov
+MIN_PEAK_HEIGHT = 28000       # justeres etter behov
 MIN_RR_SEC = 0.27
 MIN_RR_SAMPLES = int(MIN_RR_SEC * SAMPLE_RATE)
 
