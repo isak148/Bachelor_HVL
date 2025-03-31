@@ -10,7 +10,7 @@ import os
 
 # Konfigurasjon
 sample_rate = 100
-duration_sec = 5
+duration_sec = 1.5
 samples_per_window = sample_rate * duration_sec
 bpm_history = []
 
@@ -35,11 +35,11 @@ def calculate_bpm_hamilton(signal, fs):
         if rr >= 0.27:
             rr_intervals.append(rr)
 
-    if len(rr_intervals) < 5:
+    if len(rr_intervals) < 10:
         return None
 
     # Bruk gjennomsnitt av de 5 første gyldige intervallene
-    avg_rr = np.mean(rr_intervals[:5])
+    avg_rr = np.mean(rr_intervals[:10])
     bpm = 60 / avg_rr
     return bpm
 

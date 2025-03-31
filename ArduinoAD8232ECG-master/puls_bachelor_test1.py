@@ -21,7 +21,7 @@ i2c = busio.I2C(board.SCL, board.SDA)
 adc = ADS1015.ADS1015(i2c)
 channel = AnalogIn.AnalogIn(adc, ADS1015.P0)
 
-def bandpass_filter(data, lowcut=0.5, highcut=3, fs=100, order=4):
+def bandpass_filter(data, lowcut=2.3, highcut=5, fs=100, order=4):
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
@@ -29,6 +29,7 @@ def bandpass_filter(data, lowcut=0.5, highcut=3, fs=100, order=4):
     return filtfilt(b, a, data)
 
 def get_adc_value():
+    '''
     file_path = "sensor_data_ECG.csv"
     file_exists = os.path.exists(file_path)
 
@@ -36,7 +37,8 @@ def get_adc_value():
         writer = csv.writer(file)
         if not file_exists:
                 writer.writerow(["signal"])
-        writer.writerow([channel.value])
+        writer.writerow([channel.value])'
+        '''
     return channel.value
 
 def calculate_bpm_time_domain(filtered_data, fs):
