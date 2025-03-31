@@ -7,8 +7,8 @@ from adafruit_ads1x15.analog_in import AnalogIn
 from ecgdetectors import Detectors
 
 # Konfigurasjon
-SAMPLE_RATE = 100       # Hz
-DURATION_SEC = 5        # sekunder pr m�levindu
+SAMPLE_RATE = 50       # Hz
+DURATION_SEC = 8        # sekunder pr m�levindu
 bpm_history = []
 
 # I2C og ADC
@@ -60,7 +60,7 @@ def main():
             signal = read_signal(DURATION_SEC, SAMPLE_RATE)
             bpm = calculate_bpm_raw(signal, SAMPLE_RATE)
 
-            if bpm is not None and 40 < bpm < 180:
+            if bpm is not None and 40 < bpm < 220:
                 bpm = smooth_bpm(bpm, bpm_history)
                 print(f"?? Estimert puls: {bpm:.1f} BPM\n")
             else:
