@@ -7,6 +7,7 @@ import os
 import csv
 from collections import deque
 import numpy as np
+from scipy.signal import butter, lfilter
 
 #import smbus2
 
@@ -41,8 +42,9 @@ class MPU6050_Orientation(mpu6050):
 
         # variabler for FFS 
         self.sample_rate = 100  # Hz
-        self.window_size = self.sample_rate * 5  # 5 sekunder med data
+        self.window_size = self.sample_rate * 5  # 5 sekunder med data    
         self.data_buffer = deque(maxlen=self.window_size)
+        self.raw_data_buffer = deque(maxlen=self.window_size)
         self.last_periodicity_status = None
 
 
@@ -176,6 +178,20 @@ class MPU6050_Orientation(mpu6050):
         return {'roll': angle_x, 'pitch': angle_y}
     
 
+    
+    def butter_highpass(cutoff, fs, order=5): # butter høypass filter
+        nyquist = 0.5 * fs
+        normal_cutoff = cutoff / nyquist
+        b, a = butter(order, normal_cutoff, btype='high', analog=False)
+        return b, a
+
+   
+    def highpass_filter(data, cutoff, fs, order=5): # kaller butter_highpass filteret og gir 1 returverdi. 
+        b, a = butter_highpass(cutoff, fs, order=order)
+        y = lfilter(b, a, data)
+        return y
+    
+
     def is_periodic(self, signal, threshold_ratio=0.1, min_significant_freqs=1):
         """Vurderer om et signal inneholder et periodisk mønster basert på FFT-analyse."""
         N = len(signal)
@@ -185,25 +201,35 @@ class MPU6050_Orientation(mpu6050):
         significant_freqs = np.sum(fft_magnitude > threshold)
         return significant_freqs >= min_significant_freqs
 
+
     def gi_status_aks(self):
-        
-
-        accel_data = mpu.get_accel_data(g=True)
+        # Hent akselerasjonsdata
+        accel_data = self.get_accel_data(g=True)
         tot_G = math.sqrt(accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2)
-        
-        
-        orientation = mpu.get_orientation()
-        roll = orientation['roll']
-        pitch = orientation['pitch']
-        
-        #beregning av total_G jevn/ujevn, dette er for å finne om akselerasjonen har en "rytme" om man svømmer.
-        self.data_buffer.append(tot_G)
 
-        if len(self.data_buffer) == self.window_size:
+        # Legg til den nyeste målingen i en buffer for filtrering
+        self.raw_data_buffer.append(tot_G)
+
+        # Når bufferen har nok data, filtrer og vurder periodisiteten
+        if len(self.raw_data_buffer) == self.window_size:
+            # Filtrer dataene
+            filtered_data = highpass_filter(list(self.raw_data_buffer), cutoff=0.5, fs=self.sample_rate, order=5)
+            self.data_buffer.extend(filtered_data)
+
+            # Vurder periodisiteten basert på de filtrerte dataene
             is_periodic = self.is_periodic(list(self.data_buffer))
             self.last_periodicity_status = is_periodic
 
-        # skal retunere total_G, roll, pitch, bool: gjevn = true, ujevn = false
+            # Tøm bufferen for neste vindu
+            self.raw_data_buffer.clear()
+            self.data_buffer.clear()
+
+        # Hent orienteringsdata
+        orientation = self.get_orientation()
+        roll = orientation['roll']
+        pitch = orientation['pitch']
+
+        # Returner resultatene
         return {
             'total_G': tot_G,
             'roll': roll,
@@ -211,10 +237,6 @@ class MPU6050_Orientation(mpu6050):
             'is_periodic': self.last_periodicity_status
         }
 
-         
-
-
-        
         
 
 #vi trenger ikkje denne da vi har en egen funksjon for å hente data
