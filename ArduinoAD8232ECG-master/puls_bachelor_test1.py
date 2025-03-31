@@ -58,7 +58,7 @@ def smooth_bpm(bpm, history, window=3):
         history.pop(0)
     return np.mean(history)
 
-# Hovedl�kke
+# Hovedlokke
 try:
     print("Starter m�ling (tidsdomene med toppdeteksjon)...")
     while True:
