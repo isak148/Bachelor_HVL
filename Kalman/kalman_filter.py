@@ -1,3 +1,7 @@
+import numpy as np
+import time
+import math
+
 class KalmanFilter:
     def __init__(self, Q_angle=0.001, Q_bias=0.003, R_measure=0.03):
         self.Q_angle = Q_angle
@@ -40,3 +44,58 @@ class KalmanFilter:
         self.P[1][1] -= K[1] * P01_temp
 
         return self.angle
+
+class ComplementaryFilterWithKalman:
+    def __init__(self, alpha=0.98, Q_angle=0.001, Q_bias=0.003, R_measure=0.03):
+        self.alpha = alpha  # Komplementær filter alpha-verdi
+        self.kalman_filter = KalmanFilter(Q_angle, Q_bias, R_measure)
+
+        # Initialiserte orienteringer
+        self.roll = 0.0
+        self.pitch = 0.0
+        self.last_time = time.time()
+
+    def complementary_filter(self, accel_data, gyro_data, dt):
+        # Beregn akselerometervinkler
+        accel_angle_x = math.atan2(accel_data['y'], accel_data['z']) * (180 / math.pi)
+        accel_angle_y = math.atan2(-accel_data['x'], math.sqrt(accel_data['y']**2 + accel_data['z']**2)) * (180 / math.pi)
+
+        # Integrer gyroskopdataene
+        self.roll += gyro_data['x'] * dt
+        self.pitch += gyro_data['y'] * dt
+
+        # Bruk komplementært filter for å kombinere gyro og akselerometer
+        self.roll = self.alpha * self.roll + (1 - self.alpha) * accel_angle_x
+        self.pitch = self.alpha * self.pitch + (1 - self.alpha) * accel_angle_y
+
+        return {'roll': self.roll, 'pitch': self.pitch}
+
+    def update(self, accel_data, gyro_data):
+        current_time = time.time()
+        dt = current_time - self.last_time
+        self.last_time = current_time
+
+        if dt <= 0:
+            dt = 0.01  # Fallback til 10ms hvis tid mellom målinger er for liten
+
+        # Først bruk komplementært filter
+        filtered_orientation = self.complementary_filter(accel_data, gyro_data, dt)
+
+        # Deretter bruk Kalman-filteret for finjustering av de estimerte roll/pitch
+        kalman_roll = self.kalman_filter.update(filtered_orientation['roll'], gyro_data['x'], dt)
+        kalman_pitch = self.kalman_filter.update(filtered_orientation['pitch'], gyro_data['y'], dt)
+
+        return {'roll': kalman_roll, 'pitch': kalman_pitch}
+
+# --- EKSEMPEL ---
+if __name__ == "__main__":
+    complementary_kalman_filter = ComplementaryFilterWithKalman()
+
+    while True:
+        # Dummydata for testing
+        accel_data = {'x': 0.0, 'y': 0.0, 'z': 1.0}  # Akselerometerdata
+        gyro_data = {'x': 0.0, 'y': 0.0, 'z': 0.0}  # Gyroskopdata
+
+        orientation = complementary_kalman_filter.update(accel_data, gyro_data)
+        print(f"Roll: {orientation['roll']:.2f}, Pitch: {orientation['pitch']:.2f}")
+        time.sleep(0.01)
