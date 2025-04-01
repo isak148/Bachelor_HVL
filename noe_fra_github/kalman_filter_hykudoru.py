@@ -7,13 +7,11 @@ import math
 import time # Selv om time ikke brukes direkte i klassen her
 
 class KalmanFilter:
-    def __init__(self, R_angle=0.001, R_bias=0.003, R_measure=0.03):
+
+    def __init__(self):
         """
-        Initialiserer 1D Kalman filter for vinkelestimering.
-        Args:
-            R_angle: Usikkerhet i vinkelestimat fra modellen (gyro integrasjon).
-            R_bias: Usikkerhet i bias estimat (hvor mye bias drifter).
-            R_measure: Usikkerhet i målingen (akselerometer vinkel).
+        Initialiserer 1D Kalman filter (versjon fra Hykudoru repo).
+        Bruker hardkodede R/Q verdier.
         """
         self.angle = 0.0  # Reset angle
         self.bias = 0.0   # Reset bias
@@ -21,15 +19,15 @@ class KalmanFilter:
         # Covariance matrix
         self.P = [[0.0, 0.0], [0.0, 0.0]]
 
-        # Process noise covariance constants (R i repo, men Q i standard Kalman)
-        self.Q_angle = R_angle # Endret navn for klarhet
-        self.Q_bias = R_bias   # Endret navn for klarhet
-
-        # Measurement noise covariance constant (Q i repo, men R i standard Kalman)
-        self.R_measure = R_measure # Endret navn for klarhet
+        # Hardkodede verdier fra original repo
+        # (Repo brukte R_ for prosess, Q_ for measure - motsatt av standard)
+        # Vi bruker standard navn internt, men setter verdiene fra repoet.
+        self.Q_angle = 0.001 # Repo kalte denne R_angle (prosess)
+        self.Q_bias = 0.003  # Repo kalte denne R_bias (prosess)
+        self.R_measure = 0.03 # Repo kalte denne Q_measure (måling)
 
         self.dt = 0.0
-        self.last_time = time.time() # Brukes ikke internt, men greit å ha
+        self.last_time = time.time()
 
     def update(self, new_angle_acc, new_rate_gyro):
         """
