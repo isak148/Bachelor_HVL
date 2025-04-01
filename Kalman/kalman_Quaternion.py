@@ -74,14 +74,22 @@ class KalmanFilterWithQuaternion:
 
     def _get_angles_from_quaternion(self):
         q = self.quaternion
+
+        # Utregning med atan2 (stabil for full 360° rotasjon)
         roll = math.degrees(math.atan2(2*(q[0]*q[1] + q[2]*q[3]),
-                                       1 - 2*(q[1]**2 + q[2]**2)))
-        pitch = math.degrees(math.asin(2*(q[0]*q[2] - q[3]*q[1])))
+                                    1 - 2*(q[1]**2 + q[2]**2)))
+
+        sinp = 2 * (q[0]*q[2] - q[3]*q[1])
+        if abs(sinp) >= 1:
+            pitch = math.degrees(math.copysign(math.pi / 2, sinp))  # ±90°
+        else:
+            pitch = math.degrees(math.asin(sinp))
 
         return {
             'roll': (roll + 360) % 360,
             'pitch': (pitch + 360) % 360
         }
+
 
 
 # --- EKSEMPEL ---
