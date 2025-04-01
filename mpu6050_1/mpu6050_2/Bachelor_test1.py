@@ -179,15 +179,15 @@ class MPU6050_Orientation(mpu6050):
     
 
     
-    def butter_highpass(cutoff, fs, order=5): # butter høypass filter
+    def butter_highpass(self, cutoff, fs, order=5): # butter høypass filter
         nyquist = 0.5 * fs
         normal_cutoff = cutoff / nyquist
         b, a = butter(order, normal_cutoff, btype='high', analog=False)
         return b, a
 
    
-    def highpass_filter(data, cutoff, fs, order=5): # kaller butter_highpass filteret og gir 1 returverdi. 
-        b, a = butter_highpass(cutoff, fs, order=order)
+    def highpass_filter(self, data, cutoff, fs, order=5): # kaller butter_highpass filteret og gir 1 returverdi. 
+        b, a = self.butter_highpass(cutoff, fs, order=order)
         y = lfilter(b, a, data)
         return y
     
@@ -213,7 +213,7 @@ class MPU6050_Orientation(mpu6050):
         # Når bufferen har nok data, filtrer og vurder periodisiteten
         if len(self.raw_data_buffer) == self.window_size:
             # Filtrer dataene
-            filtered_data = highpass_filter(list(self.raw_data_buffer), cutoff=0.5, fs=self.sample_rate, order=5)
+            filtered_data = self.highpass_filter(list(self.raw_data_buffer), cutoff=0.5, fs=self.sample_rate, order=5)
             self.data_buffer.extend(filtered_data)
 
             # Vurder periodisiteten basert på de filtrerte dataene
