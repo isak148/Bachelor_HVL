@@ -86,9 +86,9 @@ if __name__ == "__main__":
     mpu = mpu6050(0x68)
     while True:
         gyro_data=mpu.get_gyro_data()
-        accel_data=mpu.get_accel_data()
+        accel_data=mpu.get_accel_data(g=True)
        
 
         orientation = kalman_rot.update(gyro_data, accel_data)
         print("Roll: {:.2f}, Pitch: {:.2f}".format(orientation['roll'], orientation['pitch']))
-        time.sleep(0.01)
+        time.sleep(0.1)
