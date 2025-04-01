@@ -84,23 +84,28 @@ class KalmanFilterWithQuaternion:
     def _get_angles_from_quaternion(self):
         q = self.quaternion
 
-        # Roll
+        # Roll (x-aksen)
         sinr_cosp = 2 * (q[0]*q[1] + q[2]*q[3])
         cosr_cosp = 1 - 2 * (q[1]**2 + q[2]**2)
         roll = math.degrees(math.atan2(sinr_cosp, cosr_cosp))
 
-        # Pitch
+        # Pitch (y-aksen)
         sinp = 2 * (q[0]*q[2] - q[3]*q[1])
         if abs(sinp) >= 1:
             pitch = math.degrees(math.copysign(math.pi / 2, sinp))
         else:
             pitch = math.degrees(math.asin(sinp))
 
-        # Juster til -180 til +180
+        # Juster roll og pitch til -180 til +180
         if roll > 180:
             roll -= 360
+        elif roll < -180:
+            roll += 360
+
         if pitch > 180:
             pitch -= 360
+        elif pitch < -180:
+            pitch += 360
 
         return {
             'roll': roll,
@@ -112,6 +117,7 @@ class KalmanFilterWithQuaternion:
 if __name__ == "__main__":
     kalman_q = KalmanFilterWithQuaternion()
     while True:
+        # Dummydata – bytt med sanntidsmålinger
         gyro_data = {'x': 0.0, 'y': 0.0, 'z': 0.0}
         accel_data = {'x': 0.0, 'y': 0.0, 'z': 1.0}
 
