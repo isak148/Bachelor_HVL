@@ -46,7 +46,7 @@ class KalmanFilter:
         return self.angle
 
 class ComplementaryFilterWithKalman:
-    def __init__(self, alpha=0.98, Q_angle=0.001, Q_bias=0.003, R_measure=0.03):
+    def __init__(self, alpha=0.95, Q_angle=0.001, Q_bias=0.003, R_measure=0.03):
         self.alpha = alpha  # Komplementær filter alpha-verdi
         self.kalman_filter = KalmanFilter(Q_angle, Q_bias, R_measure)
 
