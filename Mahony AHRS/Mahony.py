@@ -21,8 +21,6 @@ class MahonyAHRS:
         self.q = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float64)  # Initialkvaternion [w, x, y, z]
         self.integral_fb = np.array([0.0, 0.0, 0.0], dtype=np.float64)  # Integral av feil (gyro bias)
         self.last_time = time.time()
-        self.gyro_offset = self.calibrate_gyro(50)
-        self.accel_offset =self.calibrate_accel(50)
         print(f"MahonyAHRS initialisert med sample_freq={sample_freq}, Kp={kp}, Ki={ki}")
 
     def calibrate_accel(self, samples=100):

@@ -6,8 +6,8 @@ import sys
 
 # Importer klassene fra de andre filene
 try:
-    from mpu6050_1.mpu6050_2 import mpu6050_interface
-    import Mahony
+    from mpu6050_1.mpu6050_2.mpu6050_interface import MPU6050_Interface
+    from Mahony import MahonyAHRS
 except ImportError as e:
     print(f"FEIL: Kunne ikke importere nødvendige klasser: {e}")
     print("Sørg for at 'mpu6050_interface.py' og 'mahony_ahrs.py' ligger i samme mappe som dette skriptet,")
@@ -20,7 +20,7 @@ if __name__ == "__main__":
         # 1. Initialiser MPU6050_Interface
         #    Kalibreringen skjer automatisk i __init__
         print("-" * 50)
-        mpu = mpu6050_interface(address=0x68)
+        mpu = MPU6050_Interface(0x68)
         print("-" * 50)
 
         # Hent kalibreringsoffset for referanse
@@ -31,7 +31,7 @@ if __name__ == "__main__":
         SAMPLE_FREQ = 100.0  # Sett ønsket samplingsfrekvens (Hz)
         KP = 2.0            # Proportional gain (juster ved behov)
         KI = 0.1            # Integral gain (juster ved behov)
-        mahony = Mahony(sample_freq=SAMPLE_FREQ, kp=KP, ki=KI)
+        mahony = MahonyAHRS(SAMPLE_FREQ, KP, KI)
         print("-" * 50)
 
         print("Starter Mahony AHRS loop... Trykk Ctrl+C for å avslutte.")
