@@ -57,7 +57,7 @@ class MPU6050_Orientation(mpu6050):
         print("MPU6050 Initialisering fullført.")
 
 
-    def calibrate_accel(self, samples=500): # Økt default samples
+    def calibrate_accel(self, samples=50): # Økt default samples
         """Kalibrerer akselerometeret ved å finne gjennomsnittlig bias."""
         print(f"Starter akselerometerkalibrering ({samples} samples)...")
         print("Sørg for at sensoren ligger helt stille og vannrett!")
@@ -69,7 +69,7 @@ class MPU6050_Orientation(mpu6050):
                 offset['y'] += accel_data['y']
                 offset['z'] += accel_data['z']
                 sleep(0.02) # Liten pause mellom målinger
-                if i % 50 == 0:
+                if i % 5 == 0:
                     print(f"Kalibrering aksel sample {i}/{samples}")
 
             offset['x'] /= samples
@@ -90,7 +90,7 @@ class MPU6050_Orientation(mpu6050):
             # Returner null-offset ved feil for å unngå krasj
             return {'x': 0.0, 'y': 0.0, 'z': 0.0}
 
-    def calibrate_gyro(self, samples=500): # Økt default samples
+    def calibrate_gyro(self, samples=50): # Økt default samples
         """Kalibrerer gyroskopet ved å finne gjennomsnittlig drift."""
         print(f"Starter gyroskopkalibrering ({samples} samples)...")
         print("Sørg for at sensoren ligger helt stille!")
@@ -102,7 +102,7 @@ class MPU6050_Orientation(mpu6050):
                 offset['y'] += gyro_data['y']
                 offset['z'] += gyro_data['z']
                 sleep(0.02) # Liten pause
-                if i % 50 == 0:
+                if i % 5 == 0:
                     print(f"Kalibrering gyro sample {i}/{samples}")
 
             offset['x'] /= samples
