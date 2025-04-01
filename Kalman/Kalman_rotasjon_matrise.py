@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import math
+from mpu6050_1.mpu6050_2.mpu6050 import mpu6050
 
 class KalmanFilterWithRotation:
     def __init__(self, Q_angle=0.001, Q_bias=0.003, R_measure=0.03):
@@ -82,9 +83,11 @@ class KalmanFilterWithRotation:
 # --- EKSEMPEL ---
 if __name__ == "__main__":
     kalman_rot = KalmanFilterWithRotation()
+    mpu = mpu6050(0x68)
     while True:
-        gyro_data = {'x': 0.0, 'y': 0.0, 'z': 0.0}
-        accel_data = {'x': 0.0, 'y': 0.0, 'z': 1.0}
+        gyro_data=mpu.get_gyro_data()
+        accel_data=mpu.get_accel_data()
+       
 
         orientation = kalman_rot.update(gyro_data, accel_data)
         print("Roll: {:.2f}, Pitch: {:.2f}".format(orientation['roll'], orientation['pitch']))
