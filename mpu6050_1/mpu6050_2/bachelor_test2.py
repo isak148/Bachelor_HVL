@@ -8,7 +8,7 @@ import csv
 from collections import deque
 import numpy as np
 from scipy.signal import butter, lfilter
-from Kalman import kalman_filter
+from Kalman.kalman_filter import KalmanFilter
 
 #import smbus2
 
