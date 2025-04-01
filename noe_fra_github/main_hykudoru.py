@@ -24,8 +24,9 @@ try:
     # Parametrene (R_angle, R_bias, R_measure) kan trenge tuning.
     # Merk: Navnene R/Q er byttet om i repoet ift. standard Kalman-notasjon.
     # Jeg brukte standardnotasjon (Q for prosess, R for måling) i klassedefinisjonen over.
-    kalman_filter_pitch = KalmanFilter(Q_angle=0.001, Q_bias=0.003, R_measure=0.03)
-    kalman_filter_roll = KalmanFilter(Q_angle=0.001, Q_bias=0.003, R_measure=0.03)
+    # MED DISSE (uten argumenter):
+    kalman_filter_pitch = KalmanFilter()
+    kalman_filter_roll = KalmanFilter()
 
     # Tid for første loop
     last_read_time = time.time()
