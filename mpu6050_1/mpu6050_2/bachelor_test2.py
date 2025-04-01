@@ -47,10 +47,8 @@ class MPU6050_Orientation(mpu6050):
         self.data_buffer = deque(maxlen=self.window_size)
         self.raw_data_buffer = deque(maxlen=self.window_size)
         self.last_periodicity_status = None
-
-        self.kalman_x = KalmanFilter()
-        self.kalman_y = KalmanFilter()
-
+        
+        #Initialiserer kalman  filter
         self.kalman_rotation = KalmanFilterWithRotation()
 
 
