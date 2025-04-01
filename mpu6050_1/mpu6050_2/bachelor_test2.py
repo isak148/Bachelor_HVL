@@ -10,7 +10,7 @@ import numpy as np
 from scipy.signal import butter, lfilter
 #from Kalman.Kalman_rotasjon_matrise import KalmanFilterWithRotation
 from Kalman.kalman_Quaternion import KalmanFilterWithQuaternion
-#rom Kalman.kalman_filter import ComplementaryFilterWithKalman
+from Kalman.kalman_filter import ComplementaryFilterWithKalman
 
 #import smbus2
 
@@ -51,7 +51,7 @@ class MPU6050_Orientation(mpu6050):
         self.last_periodicity_status = None
         
         #Initialiserer kalman  filter
-        self.kalman_filter = KalmanFilterWithQuaternion()
+        self.kalman_filter = ComplementaryFilterWithKalman()
 
 
 
