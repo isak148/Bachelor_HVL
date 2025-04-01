@@ -8,8 +8,10 @@ import csv
 from collections import deque
 import numpy as np
 from scipy.signal import butter, lfilter
-from Kalman.Kalman_rotasjon_matrise import KalmanFilterWithRotation
+#from Kalman.Kalman_rotasjon_matrise import KalmanFilterWithRotation
 from Kalman.kalman_Quaternion import KalmanFilterWithQuaternion
+#rom Kalman.kalman_filter import ComplementaryFilterWithKalman
+
 #import smbus2
 
 class MPU6050_Orientation(mpu6050):
@@ -197,6 +199,7 @@ if __name__ == "__main__":
         print(f"Roll: {status['roll']}")
         print(f"Pitch: {status['pitch']}")
         print(f"Periodisitet: {'Jevn' if status['is_periodic'] else 'Ujevn'}")
+        sleep(0.01)
 
     
    
