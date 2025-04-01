@@ -52,103 +52,46 @@ class MPU6050_Orientation(mpu6050):
         self.kalman_y = KalmanFilter()
 
 
-    def calibrate_accel(self, samples=100): # Økt antall samples
-        print("Starter kalibrering av akselerometer.")
-        print("VIKTIG: Plasser sensoren HELT I RO og HORISONTALT (flatt)!")
-        sleep(2) # Gi brukeren tid til å plassere sensoren
 
-        offset = {'x': 0.0, 'y': 0.0, 'z': 0.0}
-        sum_sq = {'x': 0.0, 'y': 0.0, 'z': 0.0} # For standardavvik
 
-        for i in range(samples):
-            try:
-                accel_data = self.get_accel_data(g=True)
-                offset['x'] += accel_data['x']
-                offset['y'] += accel_data['y']
-                offset['z'] += accel_data['z']
-                sum_sq['x'] += accel_data['x']**2
-                sum_sq['y'] += accel_data['y']**2
-                sum_sq['z'] += accel_data['z']**2
-                sleep(0.02) # Kortere sleep, flere samples
-            except IOError:
-                 print(f"IOError under aksel.kalibrering sample {i+1}/{samples}. Prøver igjen...")
-                 sleep(0.1) # Vent litt før nytt forsøk
-                 # Vurder å hoppe over/prøve på nytt her
-                 # For enkelhets skyld, la oss bare fortsette, men dette kan påvirke snittet
 
+
+    def calibrate_accel(self, samples=100):
+        print("starter kalibrering accelrometer")
+        offset = {'x':0.0, 'y':0.0, 'z': 0.0}
+        for _ in range(samples):
+            accel_data = self.get_accel_data(g=True)
+            offset['x'] += accel_data['x']
+            offset['y'] += accel_data['y']
+            offset['z'] += accel_data['z']
+            sleep(0.05)
+        
+        print("Ferdig kalibrert accelrometer")
+
+        offset['x'] /= samples
+        offset['y'] /= samples
+        offset['z'] = offset['z'] / samples - 1.0 # juster for gravitasjon 
+        
+        return offset  
+
+    def calibrate_gyro(self, samples=100):
+        print("starter kalibrering gyro")
+        offset = {'x':0.0, 'y':0.0, 'z': 0.0}
+        for _ in range(samples):
+            gyro_data = self.get_gyro_data() 
+            offset['x'] += gyro_data['x']
+            offset['y'] += gyro_data['y']
+            offset['z'] += gyro_data['z']
+            sleep(0.05)
+       
+        print("Ferdig kalibrert gyro")
 
         offset['x'] /= samples
         offset['y'] /= samples
         offset['z'] /= samples
+        
+        return offset  
 
-        # Beregn standardavvik for å sjekke stabilitet
-        std_dev_x = math.sqrt(max(0, sum_sq['x'] / samples - offset['x']**2)) # max(0,...) for numerisk stabilitet
-        std_dev_y = math.sqrt(max(0, sum_sq['y'] / samples - offset['y']**2))
-        std_dev_z = math.sqrt(max(0, sum_sq['z'] / samples - offset['z']**2))
-
-        print(f"Aksel. Kalibrering Std Dev: x={std_dev_x:.4f}, y={std_dev_y:.4f}, z={std_dev_z:.4f}")
-        # Sett en fornuftig terskel for stabilitet (f.eks. 0.05g)
-        if max(std_dev_x, std_dev_y, std_dev_z) > 0.05:
-            print("ADVARSEL: Akselerometeret var ustabilt under kalibrering! Resultatet kan være upålitelig.")
-
-        # --- Forbedret Offset Beregning ---
-        # Anta at sensoren var noenlunde flat, X og Y skal være nær 0g
-        accel_offset_cal = {'x': offset['x'], 'y': offset['y']}
-
-        # For Z, finn ut om den er nærmest +1g eller -1g
-        g_magnitude_z = abs(offset['z'])
-        if g_magnitude_z < 0.5: # Bør være nær 1g hvis den ligger flatt
-             print(f"ADVARSEL: Z-aksen ({offset['z']:.2f}g) er ikke nær +/-1g. Er sensoren plassert flatt?")
-             # Bruk den målte verdien som offset hvis vi ikke er sikre på orienteringen
-             accel_offset_cal['z'] = offset['z']
-        else:
-            # Bestem om det er +1g eller -1g
-            expected_g_z = np.sign(offset['z']) # Gir +1.0 eller -1.0
-            # Offset er forskjellen mellom målt verdi og forventet G-verdi
-            accel_offset_cal['z'] = offset['z'] - expected_g_z
-
-        print(f"Ferdig kalibrert akselerometer. Offset: x={accel_offset_cal['x']:.3f}, y={accel_offset_cal['y']:.3f}, z={accel_offset_cal['z']:.3f}")
-        return accel_offset_cal
-
-    def calibrate_gyro(self, samples=100): # Økt antall samples
-        print("Starter kalibrering av gyroskop.")
-        print("VIKTIG: Plasser sensoren HELT I RO!")
-        sleep(2) # Gi brukeren tid
-
-        offset = {'x': 0.0, 'y': 0.0, 'z': 0.0}
-        sum_sq = {'x': 0.0, 'y': 0.0, 'z': 0.0} # For standardavvik
-
-        for i in range(samples):
-            try:
-                gyro_data = self.get_gyro_data()
-                offset['x'] += gyro_data['x']
-                offset['y'] += gyro_data['y']
-                offset['z'] += gyro_data['z']
-                sum_sq['x'] += gyro_data['x']**2
-                sum_sq['y'] += gyro_data['y']**2
-                sum_sq['z'] += gyro_data['z']**2
-                sleep(0.02) # Kortere sleep
-            except IOError:
-                 print(f"IOError under gyro.kalibrering sample {i+1}/{samples}. Prøver igjen...")
-                 sleep(0.1)
-
-        offset['x'] /= samples
-        offset['y'] /= samples
-        offset['z'] /= samples
-
-         # Beregn standardavvik for å sjekke stabilitet
-        std_dev_x = math.sqrt(max(0, sum_sq['x'] / samples - offset['x']**2))
-        std_dev_y = math.sqrt(max(0, sum_sq['y'] / samples - offset['y']**2))
-        std_dev_z = math.sqrt(max(0, sum_sq['z'] / samples - offset['z']**2))
-
-        print(f"Gyro Kalibrering Std Dev: x={std_dev_x:.4f}, y={std_dev_y:.4f}, z={std_dev_z:.4f}")
-        # Sett en fornuftig terskel (f.eks. 0.5 deg/s)
-        if max(std_dev_x, std_dev_y, std_dev_z) > 0.5:
-            print("ADVARSEL: Gyroskopet var ustabilt under kalibrering! Resultatet kan være upålitelig.")
-
-
-        print(f"Ferdig kalibrert gyro. Offset: x={offset['x']:.3f}, y={offset['y']:.3f}, z={offset['z']:.3f}")
-        return offset
 
 
     def get_orientation(self, dt= 0.01):
