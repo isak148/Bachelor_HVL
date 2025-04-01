@@ -94,92 +94,115 @@ class MPU6050_Orientation(mpu6050):
 
 
 
-    def get_orientation(self, dt= 0.01):
+    def get_orientation(self):
 
         current_time = time.time()
         dt = current_time - self.last_time
+        if dt <= 0:
+             dt = 1 / self.sample_rate
         self.last_time = current_time
 
-        #Beregner vinkelorientering basert på akselerometer og gyroskop
-        accel_data = self.get_accel_data(g=True)
-        gyro_data = self.get_gyro_data()
-        
-        #Juster for kalibrert bias
-        gyro_data['x'] -= self.gyro_offset['x']
-        gyro_data['y'] -= self.gyro_offset['y']
-        gyro_data['z'] -= self.gyro_offset['z']
+         # Hent rådata
+        accel_data_raw = self.get_accel_data(g=True) # Rådata for 1G sjekk
+        gyro_data_raw = self.get_gyro_data()
 
-        accel_data['x'] -= self.accel_offset['x']
-        accel_data['y'] -= self.accel_offset['y']
-        accel_data['z'] -= self.accel_offset['z'] 
-      
-        
-        # Beregn vinkel fra akselerometer i grader
-        accel_angle_x = math.atan2(accel_data['y'], accel_data['x']) * (180/math.pi)
-        accel_angle_y = math.atan2(-accel_data['x'], accel_data['z']) * (180/math.pi)
-        
-        
-        
-       
-        #sjekker om en av aksene er stabil på en 1G
-        if abs(accel_data['x']) > (1.0 - self.threshold) and abs(accel_data['x']) < (1.0 + self.threshold):
-            self.stable_count_x += 1
-        else:
-            self.stable_count_x = 0
+        accel_data_cal = {
+        'x': accel_data_raw['x'] - self.accel_offset['x'],
+        'y': accel_data_raw['y'] - self.accel_offset['y'],
+        'z': accel_data_raw['z'] - self.accel_offset['z'] # Z-offset fra forbedret kalibrering
+        }
+        gyro_data_cal = {
+            'x': gyro_data_raw['x'] - self.gyro_offset['x'],
+            'y': gyro_data_raw['y'] - self.gyro_offset['y'],
+            'z': gyro_data_raw['z'] - self.gyro_offset['z']
+        }
 
-        if abs(accel_data['y']) > (1.0 - self.threshold) and abs(accel_data['y']) < (1.0 + self.threshold):
-            self.stable_count_y += 1
+    # --- Beregn vinkel fra KALIBRERT akselerometer ---
+        # Bruk de kalibrerte dataene for å få best mulig vinkel
+        accel_angle_x = math.atan2(accel_data_cal['y'],
+                                math.sqrt(accel_data_cal['x']**2 + accel_data_cal['z']**2)) * (180/math.pi)
+        accel_angle_y = math.atan2(-accel_data_cal['x'],
+                                math.sqrt(accel_data_cal['y']**2 + accel_data_cal['z']**2)) * (180/math.pi)
+
+
+        # --- Stabilitetssjekk basert på RÅ akselerometerdata ---
+        # Normaliser rådata for å sjekke mot 1G uavhengig av små variasjoner
+        g_total_raw = math.sqrt(accel_data_raw['x']**2 + accel_data_raw['y']**2 + accel_data_raw['z']**2)
+        if g_total_raw > 0.1: # Unngå deling på null
+            norm_ax = accel_data_raw['x'] / g_total_raw
+            norm_ay = accel_data_raw['y'] / g_total_raw
+            norm_az = accel_data_raw['z'] / g_total_raw
         else:
-            self.stable_count_y
-        
-        if abs(accel_data['z']) > (1.0 - self.threshold) and abs(accel_data['z']) < (1.0 + self.threshold):
-            self.stable_count_z += 1
-        else:
-            self.stable_count_z = 0
-        
+            norm_ax, norm_ay, norm_az = 0, 0, 0
+
+        # Sjekk om en av aksene er stabil på +/- 1G (bruk normaliserte rådata)
+        # (Litt annerledes logikk enn før for å unngå å nullstille tellere unødvendig)
+        is_stable_x = abs(norm_ax) > (1.0 - self.threshold)
+        is_stable_y = abs(norm_ay) > (1.0 - self.threshold)
+        is_stable_z = abs(norm_az) > (1.0 - self.threshold)
+
+        self.stable_count_x = self.stable_count_x + 1 if is_stable_x else 0
+        self.stable_count_y = self.stable_count_y + 1 if is_stable_y else 0
+        self.stable_count_z = self.stable_count_z + 1 if is_stable_z else 0
+
+        # --- Oppdater referanse-offsets når stabilitet oppdages ---
         if self.stable_count_z >= self.required_stable_count:
-            self.gyro_angle_x = 0.0 #Nullstil roll
-            self.gyro_angle_y = 0.0 #Nullstill pitch 
-            if accel_data['z'] > 0: # Hvis +1 g på z-aksen
+            # Ligger flatt
+            # VIKTIG: IKKE rør self.gyro_angle_x/y
+            if norm_az > 0: # +1g på rå Z -> Z peker opp
                 self.roll_offset = 0.0
                 self.pitch_offset = 0.0
-            else: #Hvis -1g på z aksen 
-                self.roll_offset = 180.0 # sensoren er opp-ned 
-                self.pitch_offset = 180.0
-                self.gyro_angle_x = accel_angle_x +180
-                self.gyro_angle_y = accel_angle_y +180                   
-            self.stable_count_z = 0 # Resetter teller
+            else: # -1g på rå Z -> Z peker ned (opp-ned)
+                self.roll_offset = 180.0
+                self.pitch_offset = 180.0 # Eller juster fortegn etter definisjon
+            # print(f"INFO: Z stabil, Offset R={self.roll_offset}, P={self.pitch_offset}")
+            self.stable_count_z = 0 # Resett teller ETTER bruk
+            self.stable_count_x = 0 # Nullstill de andre også
+            self.stable_count_y = 0
+
         elif self.stable_count_y >= self.required_stable_count:
-            self.gyro_angle_x = accel_angle_x # Nullstill akkumulert roll 
-            if accel_data['y'] > 0: # hvis +1g på Y-aksen
+            # Står på siden (Y-aksen vertikal)
+            # VIKTIG: IKKE rør self.gyro_angle_x/y
+            if norm_ay > 0: # +1g på rå Y
                 self.roll_offset = 90.0
-                self.pitch_offset = 0.0
-            else: # -1G på y-aksen 
+                self.pitch_offset = 0.0 # Pitch referanse kan beholdes
+            else: # -1g på rå Y
                 self.roll_offset = -90.0
                 self.pitch_offset = 0.0
-            self.stable_count_y = 0 # Resetter teller
+            # print(f"INFO: Y stabil, Offset R={self.roll_offset}, P={self.pitch_offset}")
+            self.stable_count_y = 0 # Resett teller
+            self.stable_count_x = 0
+            self.stable_count_z = 0
+
         elif self.stable_count_x >= self.required_stable_count:
-            self.gyro_angle_y = accel_angle_y # Nullstill akkumulert pitch 
-            if accel_data['x'] < 0: # hvis +1g på Y-aksen 
-                self.pitch_offset = -90.0
+            # Står på enden (X-aksen vertikal)
+            # VIKTIG: IKKE rør self.gyro_angle_x/y
+            if norm_ax > 0: # +1g på rå X
+                self.pitch_offset = 90.0 # Eller -90 avhengig av def.
+                self.roll_offset = 0.0 # Roll referanse kan beholdes
+            else: # -1g på rå X
+                self.pitch_offset = -90.0 # Eller +90 avhengig av def.
                 self.roll_offset = 0.0
-            else: #Hvis -1g på x-aksen
-                self.pitch_offset = 90.0
-                self.roll_offset = 0.0
-            self.stable_count_x = 0 # Resetter teller 
-        else:
-            pass 
+            # print(f"INFO: X stabil, Offset R={self.roll_offset}, P={self.pitch_offset}")
+            self.stable_count_x = 0 # Resett teller
+            self.stable_count_y = 0
+            self.stable_count_z = 0
+        # else: # Ingen akse er stabil lenge nok, behold gjeldende offsets
+        #     pass
 
 
-        # Integrer gyro-data for å beregne vinkelendring
-        self.gyro_angle_x += gyro_data['x'] * dt
-        self.gyro_angle_y += gyro_data['y'] * dt
+        # --- Bruk Kalman-filter ---
+        # Gi filteret den justerte akselerometer-vinkelen og den kalibrerte gyro-raten
+        # KalmanFilter-klassen må håndtere dt internt eller via update-kallet
+        # Antar at .update returnerer den filtrerte vinkelen
+        # Pass på at rekkefølgen på argumentene er korrekt for din KalmanFilter klasse!
+        # Vanlig: update(accelerometer_angle, gyro_rate, dt)
 
-        # Bruk Kalman-filter for å kombinere akselerometer og gyro
-        angle_x = self.kalman_x.update(accel_angle_x - self.roll_offset, gyro_data['x'], dt)
-        angle_y = self.kalman_y.update(accel_angle_y - self.pitch_offset, gyro_data['y'], dt)
+        angle_x = self.kalman_x.update(accel_angle_x - self.roll_offset, gyro_data_cal['x'], dt)
+        angle_y = self.kalman_y.update(accel_angle_y - self.pitch_offset, gyro_data_cal['y'], dt)
 
         return {'roll': angle_x, 'pitch': angle_y}
+
 
 
 
