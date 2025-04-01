@@ -119,7 +119,7 @@ class MPU6050_Orientation(mpu6050):
         accel_angle_y = math.atan2(-accel_data['x'], accel_data['z']) * (180/math.pi)
         
         
-        
+        '''
        
         #sjekker om en av aksene er stabil på en 1G
         if abs(accel_data['x']) > (1.0 - self.threshold) and abs(accel_data['x']) < (1.0 + self.threshold):
@@ -174,6 +174,7 @@ class MPU6050_Orientation(mpu6050):
         # Integrer gyro-data for å beregne vinkelendring
         self.gyro_angle_x += gyro_data['x'] * dt
         self.gyro_angle_y += gyro_data['y'] * dt
+        '''
 
         # Bruk Kalman-filter for å kombinere akselerometer og gyro
         angle_x = self.kalman_x.update(accel_angle_x - self.roll_offset, gyro_data['x'], dt)
