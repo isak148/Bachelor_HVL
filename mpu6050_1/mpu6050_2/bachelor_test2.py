@@ -9,7 +9,7 @@ from collections import deque
 import numpy as np
 from scipy.signal import butter, lfilter
 from Kalman.Kalman_rotasjon_matrise import KalmanFilterWithRotation
-
+from Kalman.kalman_Quaternion import KalmanFilterWithQuaternion
 #import smbus2
 
 class MPU6050_Orientation(mpu6050):
@@ -49,7 +49,7 @@ class MPU6050_Orientation(mpu6050):
         self.last_periodicity_status = None
         
         #Initialiserer kalman  filter
-        self.kalman_rotation = KalmanFilterWithRotation()
+        self.kalman_filter = KalmanFilterWithQuaternion()
 
 
 
@@ -118,7 +118,7 @@ class MPU6050_Orientation(mpu6050):
         }
 
         # --- Bruk Kalman med rotasjonsmatrise ---
-        orientation = self.kalman_rotation.update(gyro_data_cal, accel_data_cal)
+        orientation = self.kalman_filter.update(gyro_data_cal, accel_data_cal)
 
         return orientation  # {'roll': ..., 'pitch': ...}
 
