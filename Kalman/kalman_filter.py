@@ -56,17 +56,20 @@ class ComplementaryFilterWithKalman:
         self.last_time = time.time()
 
     def complementary_filter(self, accel_data, gyro_data, dt):
-        # Beregn akselerometervinkler
+        # Beregn akselerometervinkler for både pitch og roll
         accel_angle_x = math.atan2(accel_data['y'], accel_data['z']) * (180 / math.pi)
         accel_angle_y = math.atan2(-accel_data['x'], math.sqrt(accel_data['y']**2 + accel_data['z']**2)) * (180 / math.pi)
 
-        # Integrer gyroskopdataene
+        # Integrer gyroskopdataene for bare den aksen som roteres
         self.roll += gyro_data['x'] * dt
         self.pitch += gyro_data['y'] * dt
 
-        # Bruk komplementært filter for å kombinere gyro og akselerometer
-        self.roll = self.alpha * self.roll + (1 - self.alpha) * accel_angle_x
-        self.pitch = self.alpha * self.pitch + (1 - self.alpha) * accel_angle_y
+        # Bruk komplementært filter for å kombinere gyro og akselerometer for roll og pitch
+        # Hvis vi ikke roterer rundt roll, bruk akselerometeret til å korrigere roll
+        if abs(accel_angle_x) < 90:
+            self.roll = self.alpha * self.roll + (1 - self.alpha) * accel_angle_x
+        if abs(accel_angle_y) < 90:
+            self.pitch = self.alpha * self.pitch + (1 - self.alpha) * accel_angle_y
 
         return {'roll': self.roll, 'pitch': self.pitch}
 
