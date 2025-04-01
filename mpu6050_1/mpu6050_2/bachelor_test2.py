@@ -124,7 +124,7 @@ class MPU6050_Orientation(mpu6050):
         accel_angle_y = math.atan2(-accel_data_cal['x'],
                                 math.sqrt(accel_data_cal['y']**2 + accel_data_cal['z']**2)) * (180/math.pi)
 
-
+        '''
         # --- Stabilitetssjekk basert på RÅ akselerometerdata ---
         # Normaliser rådata for å sjekke mot 1G uavhengig av små variasjoner
         g_total_raw = math.sqrt(accel_data_raw['x']**2 + accel_data_raw['y']**2 + accel_data_raw['z']**2)
@@ -189,7 +189,7 @@ class MPU6050_Orientation(mpu6050):
             self.stable_count_z = 0
         # else: # Ingen akse er stabil lenge nok, behold gjeldende offsets
         #     pass
-
+        '''
 
         # --- Bruk Kalman-filter ---
         # Gi filteret den justerte akselerometer-vinkelen og den kalibrerte gyro-raten
@@ -282,12 +282,12 @@ if __name__ == "__main__":
         print(f"Periodisitet: {'Jevn' if status['is_periodic'] else 'Ujevn'}")
 
     
+   
     
     
+''' 
     
-    
-    
-'''
+
     #sensor = mpu6050(0x68)
     mpu = MPU6050_Orientation(0x68)
     
