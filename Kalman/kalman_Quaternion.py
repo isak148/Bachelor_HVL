@@ -39,17 +39,25 @@ class KalmanFilterWithQuaternion:
             math.radians(gyro['z']) - self.bias[2]
         ])
 
-        # Konverter gyro til quaternion-derivat
-        omega = np.array([0.0, *gyro_vec])
-        q_dot = 0.5 * self.quat_multiply(self.quaternion, omega)
-        self.quaternion += q_dot * dt
-        self.quaternion = self.normalize_quaternion(self.quaternion)
+        # Eksakt quaternion-rotasjon fra gyro
+        angle = np.linalg.norm(gyro_vec) * dt
+        if angle > 0:
+            axis = gyro_vec / np.linalg.norm(gyro_vec)
+            sin_half = math.sin(angle / 2)
+            delta_q = np.array([
+                math.cos(angle / 2),
+                axis[0] * sin_half,
+                axis[1] * sin_half,
+                axis[2] * sin_half
+            ])
+            self.quaternion = self.quat_multiply(self.quaternion, delta_q)
+            self.quaternion = self.normalize_quaternion(self.quaternion)
 
         # Akselerometer (normalisert)
         accel_vector = np.array([accel['x'], accel['y'], accel['z']])
         accel_mag = np.linalg.norm(accel_vector)
         if accel_mag < 0.7 or accel_mag > 1.3:
-            return self._get_angles_from_quaternion()  # hopp korreksjon
+            return self._get_angles_from_quaternion()
 
         accel_vector /= accel_mag
 
@@ -61,12 +69,13 @@ class KalmanFilterWithQuaternion:
             q[0]**2 - q[1]**2 - q[2]**2 + q[3]**2
         ])
 
+        # Kalman korreksjon
         error = np.cross(gravity, accel_vector)
         S = self.P + self.R_measure * np.identity(3)
         K = self.P @ np.linalg.inv(S)
         correction = K @ error
 
-        # Oppdater gyro-bias
+        # Oppdater bias og P
         self.bias += correction
         self.P = (np.identity(3) - K) @ self.P + self.Q_angle * np.identity(3)
 
@@ -75,27 +84,40 @@ class KalmanFilterWithQuaternion:
     def _get_angles_from_quaternion(self):
         q = self.quaternion
 
-        # Utregning med atan2 (stabil for full 360° rotasjon)
-        roll = math.degrees(math.atan2(2*(q[0]*q[1] + q[2]*q[3]),
-                                    1 - 2*(q[1]**2 + q[2]**2)))
+        # Roll (x-aksen)
+        sinr_cosp = 2 * (q[0]*q[1] + q[2]*q[3])
+        cosr_cosp = 1 - 2 * (q[1]**2 + q[2]**2)
+        roll = math.degrees(math.atan2(sinr_cosp, cosr_cosp))
 
+        # Pitch (y-aksen)
         sinp = 2 * (q[0]*q[2] - q[3]*q[1])
         if abs(sinp) >= 1:
-            pitch = math.degrees(math.copysign(math.pi / 2, sinp))  # ±90°
+            pitch = math.degrees(math.copysign(math.pi / 2, sinp))
         else:
             pitch = math.degrees(math.asin(sinp))
 
-        return {
-            'roll': (roll + 360) % 360,
-            'pitch': (pitch + 360) % 360
-        }
+        # Juster roll og pitch til -180 til +180
+        if roll > 180:
+            roll -= 360
+        elif roll < -180:
+            roll += 360
 
+        if pitch > 180:
+            pitch -= 360
+        elif pitch < -180:
+            pitch += 360
+
+        return {
+            'roll': roll,
+            'pitch': pitch
+        }
 
 
 # --- EKSEMPEL ---
 if __name__ == "__main__":
     kalman_q = KalmanFilterWithQuaternion()
     while True:
+        # Dummydata – bytt med sanntidsmålinger
         gyro_data = {'x': 0.0, 'y': 0.0, 'z': 0.0}
         accel_data = {'x': 0.0, 'y': 0.0, 'z': 1.0}
 

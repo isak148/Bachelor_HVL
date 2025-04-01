@@ -118,6 +118,7 @@ class MPU6050_Orientation(mpu6050):
         }
 
         # --- Bruk Kalman med rotasjonsmatrise ---
+        
         orientation = self.kalman_filter.update(gyro_data_cal, accel_data_cal)
 
         return orientation  # {'roll': ..., 'pitch': ...}
