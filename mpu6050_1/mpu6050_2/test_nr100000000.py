@@ -30,8 +30,8 @@ class MPU6050_Orientation(mpu6050):
 
         # Kalibrering (øker antall samples for bedre nøyaktighet)
         # VIKTIG: Sørg for at sensoren ligger HELT STILLE og VANNRETT under kalibrering!
-        self.gyro_offset = self.calibrate_gyro(samples=500) # Økt antall samples
-        self.accel_offset = self.calibrate_accel(samples=500) # Økt antall samples
+        self.gyro_offset = self.calibrate_gyro(samples=50) # Økt antall samples
+        self.accel_offset = self.calibrate_accel(samples=50) # Økt antall samples
 
         # Komplementærfilter-variabler
         self.gyro_angle_x = 0.0 # Akkumulert vinkel fra gyro (roll)
