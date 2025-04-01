@@ -1,70 +1,90 @@
 # -*- coding: utf-8 -*-
-# Kode hentet og tilpasset fra:
+# Kode opprinnelig fra:
 # https://github.com/Hykudoru/MPU6050-Gyro-Motion-Tracking/blob/main/MPU6050-Gyro-Motion-Tracking/main.py
 # Original forfatter: Hykudoru
+# MODIFISERT for å bruke kalibrering og korrekte Roll/Pitch-navn
 
 import time
 import math
+import sys
 
 # Importer klassene fra de andre filene vi lagde
 try:
+    # Bruker den modifiserte driveren med kalibrering
     from mpu6050_driver_hykudoru import mpu6050
     from kalman_filter_hykudoru import KalmanFilter
 except ImportError as e:
     print(f"FEIL: Kunne ikke importere nødvendige klasser: {e}")
     print("Sørg for at 'mpu6050_driver_hykudoru.py' og 'kalman_filter_hykudoru.py' ligger i samme mappe.")
-    exit()
+    sys.exit(1)
 
 # --- Initialisering ---
 try:
-    # Initialiser MPU6050 sensor
-    sensor = mpu6050(0x68) # Bruker standard adresse
+    # 1. Initialiser MPU6050 (kalibrering skjer i __init__)
+    print("Initialiserer MPU6050 og starter kalibrering...")
+    sensor = mpu6050(0x68)
+    print("-" * 40)
+    print("Kalibrering fullført.")
+    print(f"  Gyro Offset: {sensor.gyro_offset}")
+    print(f"  Accel Offset: {sensor.accel_offset}")
+    print("-" * 40)
 
-    # Initialiser to separate Kalman-filtre
-    # Parametrene (R_angle, R_bias, R_measure) kan trenge tuning.
-    # Merk: Navnene R/Q er byttet om i repoet ift. standard Kalman-notasjon.
-    # Jeg brukte standardnotasjon (Q for prosess, R for måling) i klassedefinisjonen over.
-    # MED DISSE (uten argumenter):
-    kalman_filter_pitch = KalmanFilter()
-    kalman_filter_roll = KalmanFilter()
 
-    # Tid for første loop
-    last_read_time = time.time()
+    # 2. Initialiser Kalman-filtre (uten argumenter)
+    # Renamed filters for clarity based on the axis they process (using gyro input axis)
+    kalman_filter_x = KalmanFilter() # For Roll (uses gyro_x)
+    kalman_filter_y = KalmanFilter() # For Pitch (uses gyro_y)
+    print("Kalman-filtre initialisert.")
+    print("-" * 40)
 
-    print("Starter loop for å lese sensor og kjøre Kalman filter (Hykudoru)...")
+
+    print("Starter loop for å lese sensor og kjøre Kalman filter (Hykudoru - Korrigert)...")
     print("Trykk Ctrl+C for å avslutte.")
 
 except Exception as e:
     print(f"Feil under initialisering: {e}")
-    exit()
+    sys.exit(1)
 
 # --- Hovedloop ---
 while True:
     try:
-        # Les data fra sensor
-        # Få rådata først for å beregne dt mer nøyaktig før Kalman update
-        gyro_data = sensor.get_gyro_data()  # Får data i grader/sekund
-        accel_data = sensor.get_accel_data(g=True) # Får data i g
+        # 3. Les RÅ data fra sensor
+        gyro_data_raw = sensor.get_gyro_data()  # Får data i grader/sekund
+        accel_data_raw = sensor.get_accel_data(g=True) # Får data i g
 
-        # Beregn vinkler KUN fra akselerometer (bruker metodene fra repoet)
-        # ADVARSEL: Disse er ustabile nær 90 grader tilt!
-        # Og merk at 'pitch' her er basert på y/z (vanligvis roll)
-        # og 'roll' er basert på x/z (ikke standard pitch)
-        accel_pitch_angle = sensor.get_accel_pitch(accel_data)
-        accel_roll_angle = sensor.get_accel_roll(accel_data)
+        # 4. ANVEND KALIBRERING
+        accel_cal = {
+            'x': accel_data_raw['x'] - sensor.accel_offset['x'],
+            'y': accel_data_raw['y'] - sensor.accel_offset['y'],
+            'z': accel_data_raw['z'] - sensor.accel_offset['z']
+        }
+        gyro_cal = {
+            'x': gyro_data_raw['x'] - sensor.gyro_offset['x'],
+            'y': gyro_data_raw['y'] - sensor.gyro_offset['y'],
+            'z': gyro_data_raw['z'] - sensor.gyro_offset['z']
+        }
 
-        # Oppdater Kalman filtrene
-        # Send inn akselerometer-vinkel og gyro-rate for hver akse
-        pitch = kalman_filter_pitch.update(accel_pitch_angle, gyro_data['x'])
-        roll = kalman_filter_roll.update(accel_roll_angle, gyro_data['y'])
-        # Merk: gyro_data['z'] brukes ikke i dette oppsettet
+        # 5. Beregn vinkler KUN fra KALIBRERT akselerometer
+        #    og bruk korrekte navn basert på hva formlene faktisk beregner.
+        #    sensor.get_accel_pitch(data) bruker atan2(y, z) -> Beregner ROLL
+        accel_roll_from_acc = sensor.get_accel_pitch(accel_cal)
+        #    sensor.get_accel_roll(data) bruker atan2(x, z) -> Beregner PITCH
+        accel_pitch_from_acc = sensor.get_accel_roll(accel_cal)
 
-        # Skriv ut filtrerte vinkler
-        # Bruk \r for å overskrive linjen for enklere lesing
-        print(f"Pitch (Est): {pitch:6.1f} | Roll (Est): {roll:6.1f}     ", end='\r')
+        # 6. Oppdater Kalman filtrene med KORREKT data-parring
+        #    Filter X (Roll) får Roll-vinkel fra aksel. og gyro X rate.
+        roll = kalman_filter_x.update(accel_roll_from_acc, gyro_cal['x'])
+        #    Filter Y (Pitch) får Pitch-vinkel fra aksel. og gyro Y rate.
+        pitch = kalman_filter_y.update(accel_pitch_from_acc, gyro_cal['y'])
 
-        # Pause for å kontrollere loop-hastighet (ca. 100 Hz)
-        time.sleep(0.01)
+        # 7. Skriv ut filtrerte vinkler med KORREKTE labels
+        print(f"Roll (Est): {roll:6.1f} | Pitch (Est): {pitch:6.1f}     ", end='\r')
+
+        # 8. Pause for å kontrollere loop-hastighet (ca. 100 Hz)
+        #    Bruk dt fra et av filtrene for å justere søvntiden
+        #    (begge filtrene bør ha ca. samme dt)
+        sleep_time = max(0, (1.0/100.0) - kalman_filter_x.dt) # Sikter mot 100 Hz
+        time.sleep(sleep_time)
 
     except IOError:
         # print("\nIOError: Kunne ikke lese fra MPU6050. Prøver igjen...")
