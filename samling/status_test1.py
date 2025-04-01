@@ -13,12 +13,12 @@ class status:
        self.data_aks = MPU6050_Orientation.gi_status_aks()
       
 
-     return {"aks": self.data_aks}
+        return {"aks": self.data_aks}
     
     def get_data_LFR_Preasure(self):
          self.data_LFR =
          self.data_preasure=
-     return {      
+        return {      
             "LFR": self.data_LFR,   
             "pressure": self.data_pressure
             }
@@ -26,6 +26,8 @@ class status:
     def get_data_pulse(self):
         self.data_pulse=
         return {
+             
+
             "pulse": self.data_pulse    
             }
 
