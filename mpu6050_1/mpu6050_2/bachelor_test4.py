@@ -157,7 +157,7 @@ if __name__ == "__main__":
             loop_duration = time.time() - start_time
             sleep_time = (1.0 / mpu.sample_rate) - loop_duration
             if sleep_time > 0:
-                sleep(sleep_time)
+                time.sleep(sleep_time)
 
         except KeyboardInterrupt:
             print("\nAvslutter program.")

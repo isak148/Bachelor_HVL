@@ -122,13 +122,14 @@ class MPU6050_Orientation(mpu6050):
             # Tøm bufferen for neste vindu
             self.raw_data_buffer.clear()
             self.data_buffer.clear()
-
-        if status['z'] <=-0.25:
+        
+        if accel_data['z'] <=-0.25:
             retning = ("ned")
-        elif status['z']>=0.1:
+        elif accel_data['z']>=0.1:
             retning = ("opp")
         else:
-            retning("plan")
+            retning = ("plan")
+            
 
 
 
@@ -151,14 +152,16 @@ if __name__ == "__main__":
         status = mpu.gi_status_aks()
         print(f"Total G: {status['total_G']}")
         print(f"Periodisitet: {'Jevn' if status['is_periodic'] else 'Ujevn'}")
+        
+        file_path = "sensor_data_total_G.csv"
+        file_exists = os.path.exists(file_path)
 
-        if status['z'] <=-0.25:
-                print("ned")
-        elif status['z']>=0.1:
-            print("opp")
-        else:
-            print("plan")
+        with open(file_path, "a", newline='') as file:
+            writer = csv.writer(file)
+            if not file_exists:
+                    writer.writerow(["signal"])
+            writer.writerow([status['total_G']])
 
-        sleep(0.01)
+            sleep(0.01)
 
     
