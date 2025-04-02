@@ -160,9 +160,8 @@ if __name__ == "__main__":
         with open(file_path, "a", newline='') as file:
             writer = csv.writer(file)
             if not file_exists:
-                    writer.writerow(["signal"])
-            writer.writerow([status['aks('x')]], [status['aks["y"]']], [status['aks["z"]']])
-
+                    writer.writerow(["x", "y", "z"])
+            writer.writerow([status['aks']['x'], status['aks']['y'], status['aks']['z']])
             sleep(0.01)
 
     
