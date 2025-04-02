@@ -84,6 +84,7 @@ class MPU6050_Orientation(mpu6050):
         y = lfilter(b, a, data)
         return y
     
+    
     def vurder_stabilitet(tot_G_values, stabil_grense=0.88, toleranse=1.0, std_toleranse=0.5):
         """
         Funksjon som vurderer stabilitet basert på tot_G uten rullende standardavvik.
