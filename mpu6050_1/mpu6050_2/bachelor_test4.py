@@ -28,10 +28,10 @@ class MPU6050_Orientation(mpu6050):
 
         # variabler for FFS 
         self.sample_rate = 100  # Hz
-        self.window_size = self.sample_rate * 5  # 5 sekunder med data    
+        self.window_size = self.sample_rate * 1  # 5 sekunder med data    
         self.data_buffer = deque(maxlen=self.window_size)
         self.raw_data_buffer = deque(maxlen=self.window_size)
-        self.last_periodicity_status = None
+        self.last_periodicity_status = "ikke oppdatert"
         
 
     def calibrate_accel(self, samples=100):
@@ -84,7 +84,26 @@ class MPU6050_Orientation(mpu6050):
         y = lfilter(b, a, data)
         return y
     
-
+    def vurder_stabilitet(self, tot_G_values, stabil_grense=0.88, toleranse=0.05):
+        """
+        Funksjon som vurderer stabilitet basert på tot_G uten rullende standardavvik.
+        
+        :param tot_G_values: Liste eller array med tot_G (total akselerasjon, hvor 1 er stabilt)
+        :param stabil_grense: Grenseverdien for stabilitet (default er 1 for gravitasjonsakselerasjon)
+        :param toleranse: Toleranseområdet rundt stabil_grense som definerer det stabile området
+        :return: String "Stabil" eller "Ustabil"
+        """
+        # Beregn gjennomsnittlig tot_G
+        mean_tot_G = np.mean(tot_G_values)
+        
+        # Beregn standardavviket for tot_G
+        std_tot_G = np.std(tot_G_values)
+        
+        # Vurder stabilitet basert på tot_G og standardavvik
+        if abs(mean_tot_G - stabil_grense) <= toleranse and std_tot_G < toleranse:
+            return "Stabil"  # Stabilt når tot_G er nær stabil_grense og standardavviket er lavt
+        else:
+            return "Ustabil"  # Ustabilt hvis tot_G er langt fra stabil_grense eller høy standardavvik
   
 
     def gi_status_aks(self):
@@ -102,7 +121,7 @@ class MPU6050_Orientation(mpu6050):
             self.data_buffer.extend(filtered_data)
 
             # Vurder periodisiteten basert på de filtrerte dataene
-            is_periodic = self.vurder_stabilitet(list(self.data_buffer))
+            is_periodic = self.vurder_stabilitet(self.data_buffer)
             self.last_periodicity_status = is_periodic
 
             # Tøm bufferen for neste vindu
@@ -125,30 +144,8 @@ class MPU6050_Orientation(mpu6050):
             'aks' : accel_data
         }
     
-    def vurder_stabilitet(tot_G_values, stabil_grense=1, toleranse=0.05):
-        """
-        Funksjon som vurderer stabilitet basert på tot_G uten rullende standardavvik.
-        
-        :param tot_G_values: Liste eller array med tot_G (total akselerasjon, hvor 1 er stabilt)
-        :param stabil_grense: Grenseverdien for stabilitet (default er 1 for gravitasjonsakselerasjon)
-        :param toleranse: Toleranseområdet rundt stabil_grense som definerer det stabile området
-        :return: String "Stabil" eller "Ustabil"
-        """
-        # Beregn gjennomsnittlig tot_G
-        mean_tot_G = np.mean(tot_G_values)
-        
-        # Beregn standardavviket for tot_G
-        std_tot_G = np.std(tot_G_values)
-        
-        # Vurder stabilitet basert på tot_G og standardavvik
-        if abs(mean_tot_G - stabil_grense) <= toleranse and std_tot_G < toleranse:
-            return "Stabil"  # Stabilt når tot_G er nær stabil_grense og standardavviket er lavt
-        else:
-            return "Ustabil"  # Ustabilt hvis tot_G er langt fra stabil_grense eller høy standardavvik
+    
 
-
-
-        
 
 #vi trenger ikkje denne da vi har en egen funksjon for å hente data
 
