@@ -85,7 +85,7 @@ class MPU6050_Orientation(mpu6050):
         return y
     
     
-    def vurder_stabilitet(tot_G_values, stabil_grense=0.88, toleranse=1.0, std_toleranse=0.5):
+    def vurder_stabilitet(self, tot_G_values, stabil_grense=0.88, toleranse=1.0, std_toleranse=0.5):
         """
         Funksjon som vurderer stabilitet basert på tot_G uten rullende standardavvik.
         
@@ -101,7 +101,6 @@ class MPU6050_Orientation(mpu6050):
         # Beregn standardavviket for tot_G
         std_tot_G = np.std(tot_G_values)
         
-        print(f"Mean tot_G: {mean_tot_G}, Standard Deviation: {std_tot_G}")  # Debug info
         
         # Vurder stabilitet basert på tot_G og standardavvik
         if abs(mean_tot_G - stabil_grense) <= toleranse and std_tot_G <= std_toleranse:
