@@ -84,13 +84,14 @@ class MPU6050_Orientation(mpu6050):
         y = lfilter(b, a, data)
         return y
     
-    def vurder_stabilitet(self, tot_G_values, stabil_grense=0.88, toleranse=0.05):
+    def vurder_stabilitet(tot_G_values, stabil_grense=0.88, toleranse=1.0, std_toleranse=0.5):
         """
         Funksjon som vurderer stabilitet basert på tot_G uten rullende standardavvik.
         
-        :param tot_G_values: Liste eller array med tot_G (total akselerasjon, hvor 1 er stabilt)
-        :param stabil_grense: Grenseverdien for stabilitet (default er 1 for gravitasjonsakselerasjon)
+        :param tot_G_values: Liste eller array med tot_G (total akselerasjon, hvor 0.88 er stabilt)
+        :param stabil_grense: Grenseverdien for stabilitet (default er 0.88 for normal akselerasjon)
         :param toleranse: Toleranseområdet rundt stabil_grense som definerer det stabile området
+        :param std_toleranse: Toleranse for standardavviket for å vurdere om signalet er stabilt
         :return: String "Stabil" eller "Ustabil"
         """
         # Beregn gjennomsnittlig tot_G
@@ -99,12 +100,15 @@ class MPU6050_Orientation(mpu6050):
         # Beregn standardavviket for tot_G
         std_tot_G = np.std(tot_G_values)
         
+        print(f"Mean tot_G: {mean_tot_G}, Standard Deviation: {std_tot_G}")  # Debug info
+        
         # Vurder stabilitet basert på tot_G og standardavvik
-        if abs(mean_tot_G - stabil_grense) <= toleranse and std_tot_G < toleranse:
+        if abs(mean_tot_G - stabil_grense) <= toleranse and std_tot_G <= std_toleranse:
             return "Stabil"  # Stabilt når tot_G er nær stabil_grense og standardavviket er lavt
         else:
             return "Ustabil"  # Ustabilt hvis tot_G er langt fra stabil_grense eller høy standardavvik
-  
+
+    
 
     def gi_status_aks(self):
         # Hent akselerasjonsdata
