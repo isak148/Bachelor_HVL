@@ -1,4 +1,4 @@
-from mpu6050_1.mpu6050_2.Bachelor_test1 import MPU6050_Orientation
+from mpu6050_1.mpu6050_2.bachelor_test2 import MPU6050_Orientation
 
 
 class status: 
@@ -9,10 +9,9 @@ class status:
 
     
     def get_data_aks(self):
-       # Denne skal retunere: Bool jevn/ujevn, int roll/pitch, 
-       self.data_aks = MPU6050_Orientation.gi_status_aks()
-      
-
+       # Denne skal retunere: 'total_G': tot_G, 'is_periodic': last_periodicity_status,'retning' : retning
+        self.data_aks = MPU6050_Orientation.gi_status_aks()
+        
         return {"aks": self.data_aks}
     
     def get_data_LFR_Preasure(self):
@@ -24,7 +23,7 @@ class status:
             }
 
     def get_data_pulse(self):
-        self.data_pulse=
+        self.data_pulse
         return {
              
 

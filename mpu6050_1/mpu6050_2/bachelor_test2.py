@@ -8,9 +8,7 @@ import csv
 from collections import deque
 import numpy as np
 from scipy.signal import butter, lfilter
-#from Kalman.Kalman_rotasjon_matrise import KalmanFilterWithRotation
-from Kalman.kalman_Quaternion import KalmanFilterWithQuaternion
-from Kalman.kalman_filter import ComplementaryFilterWithKalman
+
 
 #import smbus2
 
@@ -28,21 +26,6 @@ class MPU6050_Orientation(mpu6050):
         self.gyro_offset = self.calibrate_gyro(50)
         self.accel_offset = self.calibrate_accel(50)
 
-        self.gyro_angle_x = 0.0
-        self.gyro_angle_y = 0.0
-        self.alpha = 0.95 #Komplementær filtervekt
-        self.last_time = time.time()
-
-        # variabler for automatiskkalibrering av roll pitch 
-        self.pitch_offset = 0.0
-        self.roll_offset = 0.0
-        #variabler for å telle stabile målinger
-        self.stable_count_x = 0
-        self.stable_count_y = 0
-        self.stable_count_z = 0
-        self.required_stable_count = 20
-        self.threshold = 0.05
-
         # variabler for FFS 
         self.sample_rate = 100  # Hz
         self.window_size = self.sample_rate * 5  # 5 sekunder med data    
@@ -50,8 +33,7 @@ class MPU6050_Orientation(mpu6050):
         self.raw_data_buffer = deque(maxlen=self.window_size)
         self.last_periodicity_status = None
         
-        #Initialiserer kalman  filter
-        self.kalman_filter = ComplementaryFilterWithKalman()
+  
 
 
 
@@ -93,37 +75,6 @@ class MPU6050_Orientation(mpu6050):
         offset['z'] /= samples
         
         return offset  
-
-
-
-    def get_orientation(self):
-        current_time = time.time()
-        dt = current_time - self.last_time
-        if dt <= 0:
-            dt = 1 / self.sample_rate
-        self.last_time = current_time
-
-        # --- Hent og kalibrer rådata ---
-        accel_data_raw = self.get_accel_data(g=True)
-        gyro_data_raw = self.get_gyro_data()
-
-        accel_data_cal = {
-            'x': accel_data_raw['x'] - self.accel_offset['x'],
-            'y': accel_data_raw['y'] - self.accel_offset['y'],
-            'z': accel_data_raw['z'] - self.accel_offset['z']
-        }
-
-        gyro_data_cal = {
-            'x': gyro_data_raw['x'] - self.gyro_offset['x'],
-            'y': gyro_data_raw['y'] - self.gyro_offset['y'],
-            'z': gyro_data_raw['z'] - self.gyro_offset['z']
-        }
-
-        # --- Bruk Kalman med rotasjonsmatrise ---
-        
-        orientation = self.kalman_filter.update(gyro_data_cal, accel_data_cal)
-
-        return orientation  # {'roll': ..., 'pitch': ...}
 
 
     
@@ -172,17 +123,20 @@ class MPU6050_Orientation(mpu6050):
             self.raw_data_buffer.clear()
             self.data_buffer.clear()
 
-        # Hent orienteringsdata
-        orientation = self.get_orientation()
-        roll = orientation['roll']
-        pitch = orientation['pitch']
+        if status['z'] <=-0.25:
+            retning = ("ned")
+        elif status['z']>=0.1:
+            retning = ("opp")
+        else:
+            retning("plan")
+
+
 
         # Returner resultatene
         return {
             'total_G': tot_G,
-            'roll': roll,
-            'pitch': pitch,
-            'is_periodic': self.last_periodicity_status
+            'is_periodic': self.last_periodicity_status,
+            'retning' : retning
         }
 
         
@@ -196,60 +150,15 @@ if __name__ == "__main__":
     while True:
         status = mpu.gi_status_aks()
         print(f"Total G: {status['total_G']}")
-        print(f"Roll: {status['roll']}")
-        print(f"Pitch: {status['pitch']}")
         print(f"Periodisitet: {'Jevn' if status['is_periodic'] else 'Ujevn'}")
+
+        if status['z'] <=-0.25:
+                print("ned")
+        elif status['z']>=0.1:
+            print("opp")
+        else:
+            print("plan")
+
         sleep(0.01)
 
     
-   
-    
-    
-''' 
-    
-
-    #sensor = mpu6050(0x68)
-    mpu = MPU6050_Orientation(0x68)
-    
-
-
-
-    while True:
-        accel_data = mpu.get_accel_data(g=True)
-        gyro_data = mpu.get_gyro_data()
-        #temp = sensor.get_temp()
-        orientation = mpu.get_orientation()
-
-        print("Accelerometer data")
-        print("x: " + str(accel_data['x']-mpu.accel_offset['x']))
-        print("y: " + str(accel_data['y']-mpu.accel_offset['y']))
-        print("z: " + str(accel_data['z']-mpu.accel_offset['z']))
-
-        print("Gyroscope data")
-        print("x: " + str(gyro_data['x']- mpu.gyro_offset['x']))
-        print("y: " + str(gyro_data['y']- mpu.gyro_offset['y']))
-        print("z: " + str(gyro_data['z']- mpu.gyro_offset['z']))
-
-        #print("Temp: " + str(temp) + " C")
-    
-    
-        print(f"Roll: {orientation['roll']:.2f}, Pitch: {orientation['pitch']:.2f}")
-
-        if abs(orientation['pitch']) > 45.0:
-            print("svømmer")
-        else: 
-            print("flyter")
-
-        file_path = "sensor_data.csv"
-        file_exists = os.path.exists(file_path)
-
-        with open(file_path, "w", newline='') as file:
-            writer = csv.writer(file)
-            if not file_exists:
-                writer.writerow(["Accelerometer x", "Accelerometer y", "Accelerometer z", 
-                                "Gyroscope x", "Gyroscope y", "Gyroscope z", "role", "pitch"])
-
-            writer.writerow([accel_data['x'], accel_data['y'], accel_data['z'], 
-                            gyro_data['x'], gyro_data['y'], gyro_data['z'],orientation['roll'],orientation['pitch']])
-        sleep(0.01)
-'''
