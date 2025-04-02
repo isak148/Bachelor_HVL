@@ -19,18 +19,18 @@ class MPU6050_Orientation(mpu6050):
 
         # --- Buffer og Timing ---
         self.sample_rate = 100  # Hz
-        self.buffer_size = 500 # Antall målinger i det løpende vinduet
+        self.buffer_size = 1000 # Antall målinger i det løpende vinduet
         self.tot_G_buffer = deque(maxlen=self.buffer_size)
         self.check_interval = 1.0 # Sekunder mellom hver status-sjekk
         self.last_check_time = 0.0
 
         # --- Terskel for minimum bevegelse (TUNABLE) ---
-        self.min_movement_threshold = 0.03 # Startverdi, juster basert på observasjon
+        self.min_movement_threshold = 0.015 # Startverdi, juster basert på observasjon
 
         # --- Parametere for is_periodic (TUNABLE) ---
-        self.fft_threshold_ratio = 0.3
-        self.fft_min_significant_freqs = 2
-        self.fft_freq_range = (0.8, 8.0) # Hz
+        self.fft_threshold_ratio = 0.25
+        self.fft_min_significant_freqs = 1
+        self.fft_freq_range = (0.1, 0.5) # Hz
 
         # --- Status ---
         self.reported_periodicity_status = False # Start som Ujevn
@@ -140,7 +140,7 @@ class MPU6050_Orientation(mpu6050):
             if len(self.tot_G_buffer) == self.buffer_size:
                 # print(f"Debug: Kjører sjekk @ {current_time:.2f}") # Debug print
                 window_data = list(self.tot_G_buffer)
-                cutoff_freq = 0.5 # Hz
+                cutoff_freq = 0.05 # Hz
                 filtered_window = self.highpass_filter(window_data, cutoff=cutoff_freq, fs=self.sample_rate, order=5)
 
                 signal_std_dev = np.std(filtered_window)
