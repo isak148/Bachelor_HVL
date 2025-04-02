@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from mpu6050 import mpu6050
+from mpu6050_2.mpu6050 import mpu6050
 from time import sleep
 import math
 import time

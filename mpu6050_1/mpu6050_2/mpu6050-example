@@ -2,7 +2,7 @@
 """Released under the MIT License
 Copyright 2015, 2016 MrTijn/Tijndagamer
 """
-from mpu6050 import mpu6050
+from mpu6050_2 import mpu6050
 from time import sleep
 import os
 import csv

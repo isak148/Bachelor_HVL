@@ -47,4 +47,4 @@ try:
         last_value = value
 
 except KeyboardInterrupt:
-    print("Avslutter måling.")
+    print(" Avslutter måling.")
