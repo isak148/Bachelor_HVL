@@ -130,10 +130,10 @@ if __name__ == "__main__":
             status = mpu.gi_status_aks()
             if status['total_G'] != -1:
                 print(f"Total G: {status['total_G']:.2f} | Status: {'Jevn' if status['is_periodic'] else 'Ujevn'} | Retning: {status['retning']}")
-            time.sleep(1)
+            time.sleep(0.01)
         except KeyboardInterrupt:
             print("\nAvslutter program.")
             break
         except Exception as e:
             print(f"Feil i hovedloopen: {e}")
-            time.sleep(1)
+            time.sleep(0.01)
