@@ -3,9 +3,15 @@ import time
 import math
 from scipy.signal import butter, lfilter
 from collections import deque
+from mpu6050 import mpu6050
 
-class MPU6050_Orientation:
+class MPU6050_Orientation(mpu6050):
     def __init__(self, address, bus=1):
+        super().__init__(address, bus)
+        self.set_gyro_range(self.GYRO_RANGE_250DEG)
+        self.set_accel_range(self.ACCEL_RANGE_2G)
+        self.set_filter_range(self.FILTER_BW_188)
+
         # Initialisering av sensoren og parametere
         self.sample_rate = 100  # Hz
         self.buffer_size = 1000
