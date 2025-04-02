@@ -65,15 +65,16 @@ class MPU6050_Orientation(mpu6050):
 
     def gi_status_aks(self):
         try:
+            # Forsøk å hente akselerometerdata
             accel_data = self.get_accel_data(g=True)
             tot_G = math.sqrt(accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2)
         except Exception as e:
-            print(f"Klarte ikke å hente data: {e}")
+            print(f"Feil ved henting av akselerometerdata: {e}")
             return {'total_G': -1, 'is_periodic': self.reported_periodicity_status, 'retning': "Ukjent"}
 
         self.tot_G_buffer.append(tot_G)
 
-        # Bestem retning
+        # Bestem retning basert på Z-aksen
         z_val = accel_data['z']
         if z_val <= -0.25:
             retning = "Ned"
