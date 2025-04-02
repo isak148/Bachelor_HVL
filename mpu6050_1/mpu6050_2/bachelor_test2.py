@@ -137,7 +137,8 @@ class MPU6050_Orientation(mpu6050):
         return {
             'total_G': tot_G,
             'is_periodic': self.last_periodicity_status,
-            'retning' : retning
+            'retning' : retning,
+            'aks' : accel_data
         }
 
         
@@ -153,14 +154,14 @@ if __name__ == "__main__":
         print(f"Total G: {status['total_G']}")
         print(f"Periodisitet: {'Jevn' if status['is_periodic'] else 'Ujevn'}")
         
-        file_path = "sensor_data_total_G.csv"
+        file_path = "sensor_data_aks.csv"
         file_exists = os.path.exists(file_path)
 
         with open(file_path, "a", newline='') as file:
             writer = csv.writer(file)
             if not file_exists:
                     writer.writerow(["signal"])
-            writer.writerow([status['total_G']])
+            writer.writerow([status['aks('x')]], [status['aks["y"]']], [status['aks["z"]']])
 
             sleep(0.01)
 
