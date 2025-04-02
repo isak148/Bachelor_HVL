@@ -12,22 +12,22 @@ class MPU6050_Orientation(mpu6050):
         self.set_accel_range(self.ACCEL_RANGE_2G)
         self.set_filter_range(self.FILTER_BW_188)
 
-        # Initialisering av sensoren og parametere
+        # --- Buffer og Timing ---
         self.sample_rate = 100  # Hz
-        self.buffer_size = 1000
+        self.buffer_size = 1000  # Antall målinger i det løpende vinduet
         self.tot_G_buffer = deque(maxlen=self.buffer_size)
-        self.check_interval = 1.0  # Sekunder mellom hver sjekk
+        self.check_interval = 1.0  # Sekunder mellom hver status-sjekk
         self.last_check_time = 0.0
 
-        # Terskel for minimum bevegelse (TUNABLE)
+        # --- Terskel for minimum bevegelse (TUNABLE) ---
         self.min_movement_threshold = 0.01  # Justert for mindre bevegelse
 
-        # Parametere for FFT-analyse
+        # --- Parametere for is_periodic (TUNABLE) ---
         self.fft_threshold_ratio = 0.1  # Justert for lavere frekvenser
         self.fft_min_significant_freqs = 1
         self.fft_freq_range = (0.05, 1.0)  # Bredere frekvensrange
 
-        # Status for bevegelse
+        # --- Status ---
         self.reported_periodicity_status = False
         print(f"MPU6050 initialisert. Buffer størrelse: {self.buffer_size}, Sjekk intervall: {self.check_interval}s")
 
