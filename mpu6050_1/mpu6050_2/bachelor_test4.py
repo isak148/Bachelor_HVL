@@ -114,25 +114,29 @@ class MPU6050_Orientation(mpu6050):
     
 
 
-    def vurder_stabilitet_G(self, tot_G_values, stabil_grense=1, toleranse=0.5, høy_grense=1.2, stille_grense=0.2):
+    def vurder_stabilitet_G(tot_G_values, ro_grense=1.0, normal_aktivitet_grense=1.5, høy_aktivitet_grense=1.5, toleranse=0.05):
         """
-        Funksjon som vurderer stabilitet basert på gjennomsnitt av tot_G i korte perioder.
+        Funksjon som vurderer aktivitet basert på tot_G.
         
-        :param tot_G_values: Liste eller array med tot_G (total akselerasjon)
-        :return: String "Stabil", "Høy", eller "Stille"
+        :param tot_G_values: Liste eller array med tot_G (total akselerasjon, hvor 1 er stabilt)
+        :param ro_grense: Grenseverdien for ro (default er 1 for gravitasjonsakselerasjon)
+        :param normal_aktivitet_grense: Grense for normal aktivitet (default er 1.5)
+        :param høy_aktivitet_grense: Grense for høy aktivitet (default er 1.5)
+        :param toleranse: Toleranseområdet rundt grensen som definerer aktivitetstilstandene
+        :return: String "I ro", "Normal aktivitet" eller "Høy aktivitet"
         """
-        # Beregn gjennomsnittet av de siste tot_G-verdiene (tidsvindu på 0.5 sekunder)
+        # Beregn gjennomsnittlig tot_G
         mean_tot_G = np.mean(tot_G_values)
         
-        # Vurder stabilitet basert på tot_G og grensene
-        if mean_tot_G > høy_grense:
-            return "Høy"  # Høy aktivitet (f.eks., intens akselerasjon)
-        elif abs(mean_tot_G - stabil_grense) <= toleranse:
-            return "Stabil"  # Stabilt (normal aktivitet rundt stabil_grense)
-        elif mean_tot_G < stille_grense:
-            return "Stille"  # Stille (ro eller liten bevegelse)
+        # Vurder aktivitetstilstandene basert på tot_G
+        if mean_tot_G > høy_aktivitet_grense + toleranse:
+            return "Høy aktivitet"  # Høy aktivitet (f.eks., intens akselerasjon)
+        elif mean_tot_G >= normal_aktivitet_grense + toleranse and mean_tot_G <= høy_aktivitet_grense:
+            return "Normal aktivitet"  # Normal aktivitet
+        elif mean_tot_G >= ro_grense - toleranse and mean_tot_G <= ro_grense + toleranse:
+            return "I ro"  # I ro (stabilt rundt 1 G)
         else:
-            return "Ustabil"  # Ustabilt (signifikant avvik fra stabil grense)
+            return "Ustabil"  # Ustabilt (signifikant avvik fra stabil grense))
         
     
     def vurder_stabilitet_Gyro(self, tot_G_values, stabil_grense=1, toleranse=0.1, høy_grense=1.2, stille_grense=0.2):
