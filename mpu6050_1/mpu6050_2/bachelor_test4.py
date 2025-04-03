@@ -133,6 +133,7 @@ class MPU6050_Orientation(mpu6050):
             return "Stille"  # Stille (ro eller liten bevegelse)
         else:
             return "Ustabil"  # Ustabilt (signifikant avvik fra stabil grense)
+        
     
     def vurder_stabilitet_Gyro(self, tot_G_values, stabil_grense=0.88, toleranse=0.1, høy_grense=1.2, stille_grense=0.2):
         """
@@ -199,6 +200,17 @@ if __name__ == "__main__":
         status = mpu.gi_status_aks()
         print(f"Total G: {status['total_G']}")
         print(status['is_periodic'])
+
+        file_path = "sensor_data_tot_G.csv"
+        file_exists = os.path.exists(file_path)
+
+        with open(file_path, "a", newline='') as file:
+            writer = csv.writer(file)
+            if not file_exists:
+                    writer.writerow(["G"])
+            writer.writerow(status['total_G'])
+
+
         time.sleep(0.01)
 
     
