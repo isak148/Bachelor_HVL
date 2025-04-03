@@ -1,167 +1,128 @@
-from mpu6050 import mpu6050
-from time import sleep 
-import math
+# -*- coding: utf-8 -*-
 import time
-
-import os
-import csv
-from collections import deque
 import numpy as np
-from scipy.signal import butter, lfilter
+import matplotlib.pyplot as plt
+from mpu6050 import mpu6050 # Importer MPU6050 biblioteket du bruker
+
+# --- Innstillinger ---
+sensor_address = 0x68      # Standard I2C adresse for MPU6050
+target_sample_rate_hz = 100 # Ønsket samplingsfrekvens (Hz)
+collection_duration_s = 10  # Hvor lenge data skal samles inn (sekunder)
+use_g_force = True         # Hent data som G-krefter (True) eller m/s^2 (False)?
+
+# --- Initialiser Sensor ---
+try:
+    sensor = mpu6050(sensor_address)
+    print(f"MPU6050 initialisert på adresse {hex(sensor_address)}.")
+    # Optional: Sett sensor-rekkevidde hvis ønskelig (fra tidligere kode)
+    # sensor.set_accel_range(sensor.ACCEL_RANGE_2G)
+except Exception as e:
+    print(f"Kunne ikke initialisere MPU6050: {e}")
+    print("Sjekk tilkobling og I2C-adresse.")
+    exit()
+
+# --- Datainnsamling ---
+print(f"Starter datainnsamling i {collection_duration_s} sekunder...")
+
+timestamps = []
+x_data = []
+y_data = []
+z_data = []
+
+start_time = time.time()
+loop_start_time = start_time
+actual_samples = 0
+
+while (time.time() - start_time) < collection_duration_s:
+    loop_start_time = time.time() # Nøyaktig tid ved start av loop
+
+    try:
+        # Les akselerometerdata
+        accel_data = sensor.get_accel_data(g=use_g_force)
+
+        # Lagre data og tidspunkt
+        timestamps.append(loop_start_time) # Bruk tiden målingen ble tatt
+        x_data.append(accel_data['x'])
+        y_data.append(accel_data['y'])
+        z_data.append(accel_data['z'])
+        actual_samples += 1
+
+    except Exception as e:
+        print(f"Feil under lesing fra sensor: {e}")
+        # Kan legge inn en kort pause her hvis feil skjer ofte
+        # time.sleep(0.1)
+
+    # Prøv å opprettholde samplingsraten
+    loop_end_time = time.time()
+    processing_time = loop_end_time - loop_start_time
+    sleep_time = (1.0 / target_sample_rate_hz) - processing_time
+    if sleep_time > 0:
+        time.sleep(sleep_time)
+    # else:
+    #     print(f"Advarsel: Loop tar lengre tid ({processing_time:.4f}s) enn sample period ({1.0/target_sample_rate_hz:.4f}s)")
 
 
-#import smbus2
+print(f"Datainnsamling ferdig. {actual_samples} samples samlet.")
+if actual_samples < 2: # Trenger minst 2 punkter for å plotte en linje
+     print("Ikke nok data samlet for plotting.")
+     exit()
 
-class MPU6050_Orientation(mpu6050):
-    def __init__(self, address, bus=1):
-        super(). __init__(address, bus)
+# --- Databehandling og Plotting ---
 
-        #Justere følsomhet skala(grader/s) for gyro
-        self.set_gyro_range(self.GYRO_RANGE_250DEG)
-        #Juster akselrometer følsomhet 
-        self.set_accel_range(self.ACCEL_RANGE_2G)
-        #Velg filtrerng for mpu mer filtrering treigere respons 
-        self.set_filter_range(self.FILTER_BW_188)
+# Konverter lister til NumPy arrays
+t_np = np.array(timestamps)
+x_np = np.array(x_data)
+y_np = np.array(y_data)
+z_np = np.array(z_data)
 
-        self.gyro_offset = self.calibrate_gyro(50)
-        self.accel_offset = self.calibrate_accel(50)
+# Beregngått tid fra start (første timestamp = 0)
+t_elapsed = t_np - t_np[0]
 
-        # variabler for FFS 
-        self.sample_rate = 100  # Hz
-        self.window_size = self.sample_rate * 1  # 5 sekunder med data    
-        self.data_buffer = deque(maxlen=self.window_size)
-        self.raw_data_buffer = deque(maxlen=self.window_size)
-        self.last_periodicity_status = "ikke oppdatert"
-        
+# Beregn faktisk gjennomsnittlig samplingsfrekvens
+actual_fs = actual_samples / (t_np[-1] - t_np[0]) if len(t_np)>1 else 0
+print(f"Faktisk gjennomsnittlig samplingsfrekvens: {actual_fs:.2f} Hz")
 
-    def calibrate_accel(self, samples=100):
-        print("starter kalibrering accelrometer")
-        offset = {'x':0.0, 'y':0.0, 'z': 0.0}
-        for _ in range(samples):
-            accel_data = self.get_accel_data(g=True)
-            offset['x'] += accel_data['x']
-            offset['y'] += accel_data['y']
-            offset['z'] += accel_data['z']
-            sleep(0.05)
-        
-        print("Ferdig kalibrert accelrometer")
+# Sett Y-akse label basert på valg
+if use_g_force:
+    ylabel_text = 'Akselerasjon (G)'
+else:
+    ylabel_text = 'Akselerasjon (m/s^2)' # Hvis du brukte g=False
 
-        offset['x'] /= samples
-        offset['y'] /= samples
-        offset['z'] = offset['z'] / samples - 1.0 # juster for gravitasjon 
-        
-        return offset  
+# Plot dataene
+plt.figure(figsize=(12, 8)) # Litt større figur
 
-    def calibrate_gyro(self, samples=100):
-        print("starter kalibrering gyro")
-        offset = {'x':0.0, 'y':0.0, 'z': 0.0}
-        for _ in range(samples):
-            gyro_data = self.get_gyro_data() 
-            offset['x'] += gyro_data['x']
-            offset['y'] += gyro_data['y']
-            offset['z'] += gyro_data['z']
-            sleep(0.05)
-       
-        print("Ferdig kalibrert gyro")
+# Subplot for X-data
+plt.subplot(3, 1, 1)
+plt.plot(t_elapsed, x_np, label='X')
+plt.title('Akselerometer X Data')
+plt.xlabel('Tid (s)')
+plt.ylabel(ylabel_text)
+plt.grid(True)
+plt.legend()
 
-        offset['x'] /= samples
-        offset['y'] /= samples
-        offset['z'] /= samples
-        
-        return offset  
+# Subplot for Y-data
+plt.subplot(3, 1, 2)
+plt.plot(t_elapsed, y_np, label='Y', color='orange')
+plt.title('Akselerometer Y Data')
+plt.xlabel('Tid (s)')
+plt.ylabel(ylabel_text)
+plt.grid(True)
+plt.legend()
 
+# Subplot for Z-data
+plt.subplot(3, 1, 3)
+plt.plot(t_elapsed, z_np, label='Z', color='green')
+plt.title('Akselerometer Z Data')
+plt.xlabel('Tid (s)')
+plt.ylabel(ylabel_text)
+plt.grid(True)
+plt.legend()
 
-    
-    def butter_highpass(self, cutoff, fs, order=5): # butter høypass filter
-        nyquist = 0.5 * fs
-        normal_cutoff = cutoff / nyquist
-        b, a = butter(order, normal_cutoff, btype='high', analog=False)
-        return b, a
+# Juster layout for å unngå overlapp
+plt.tight_layout()
 
-   
-    def highpass_filter(self, data, cutoff, fs, order=5): # kaller butter_highpass filteret og gir 1 returverdi. 
-        b, a = self.butter_highpass(cutoff, fs, order=order)
-        y = lfilter(b, a, data)
-        return y
-    
-    
-    def vurder_stabilitet(self, tot_G_values, stabil_grense=0.88, toleranse=1.0, std_toleranse=0.5):
-        """
-        Funksjon som vurderer stabilitet basert på tot_G uten rullende standardavvik.
-        
-        :param tot_G_values: Liste eller array med tot_G (total akselerasjon, hvor 0.88 er stabilt)
-        :param stabil_grense: Grenseverdien for stabilitet (default er 0.88 for normal akselerasjon)
-        :param toleranse: Toleranseområdet rundt stabil_grense som definerer det stabile området
-        :param std_toleranse: Toleranse for standardavviket for å vurdere om signalet er stabilt
-        :return: String "Stabil" eller "Ustabil"
-        """
-        # Beregn gjennomsnittlig tot_G
-        mean_tot_G = np.mean(tot_G_values)
-        
-        # Beregn standardavviket for tot_G
-        std_tot_G = np.std(tot_G_values)
-        
-        
-        # Vurder stabilitet basert på tot_G og standardavvik
-        if abs(mean_tot_G - stabil_grense) <= toleranse and std_tot_G <= std_toleranse:
-            return "Stabil"  # Stabilt når tot_G er nær stabil_grense og standardavviket er lavt
-        else:
-            return "Ustabil"  # Ustabilt hvis tot_G er langt fra stabil_grense eller høy standardavvik
+# Vis plottet
+print("Viser plott...")
+plt.show()
 
-    
-
-    def gi_status_aks(self):
-        # Hent akselerasjonsdata
-        accel_data = self.get_accel_data(g=True)
-        tot_G = math.sqrt(accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2)
-
-        # Legg til den nyeste målingen i en buffer for filtrering
-        self.raw_data_buffer.append(tot_G)
-
-        # Når bufferen har nok data, filtrer og vurder periodisiteten
-        if len(self.raw_data_buffer) == self.window_size:
-            # Filtrer dataene
-            filtered_data = self.highpass_filter(list(self.raw_data_buffer), cutoff=0.5, fs=self.sample_rate, order=5)
-            self.data_buffer.extend(filtered_data)
-
-            # Vurder periodisiteten basert på de filtrerte dataene
-            is_periodic = self.vurder_stabilitet(self.data_buffer)
-            self.last_periodicity_status = is_periodic
-
-            # Tøm bufferen for neste vindu
-            self.raw_data_buffer.clear()
-            self.data_buffer.clear()
-        
-        if accel_data['z'] <=-0.25:
-            retning = ("ned")
-        elif accel_data['z']>=0.1:
-            retning = ("opp")
-        else:
-            retning = ("plan")
-            
-
-        # Returner resultatene
-        return {
-            'total_G': tot_G,
-            'is_periodic': self.last_periodicity_status,
-            'retning' : retning,
-            'aks' : accel_data
-        }
-    
-    
-
-
-#vi trenger ikkje denne da vi har en egen funksjon for å hente data
-
-if __name__ == "__main__":
-    #sensor = mpu6050(0x68)
-    mpu = MPU6050_Orientation(0x68)
-    
-    while True:
-        status = mpu.gi_status_aks()
-        print(f"Total G: {status['total_G']}")
-        print(f"Periodisitet: {status['is_periodic']}")
-        
-        sleep(0.01)
-
-    
+print("Ferdig.")
