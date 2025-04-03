@@ -114,7 +114,7 @@ class MPU6050_Orientation(mpu6050):
     
 
 
-    def vurder_stabilitet_G(self, tot_G_values, stabil_grense=0.88, toleranse=0.1, høy_grense=1.2, stille_grense=0.2):
+    def vurder_stabilitet_G(self, tot_G_values, stabil_grense=1, toleranse=0.5, høy_grense=1.2, stille_grense=0.2):
         """
         Funksjon som vurderer stabilitet basert på gjennomsnitt av tot_G i korte perioder.
         
@@ -134,7 +134,7 @@ class MPU6050_Orientation(mpu6050):
         else:
             return "Ustabil"  # Ustabilt (signifikant avvik fra stabil grense)
     
-    def vurder_stabilitet_Gyro(self, tot_G_values, stabil_grense=0.88, toleranse=0.1, høy_grense=1.2, stille_grense=0.2):
+    def vurder_stabilitet_Gyro(self, tot_G_values, stabil_grense=1, toleranse=0.1, høy_grense=1.2, stille_grense=0.2):
         """
         Funksjon som vurderer stabilitet basert på gjennomsnitt av tot_G i korte perioder.
         
@@ -170,7 +170,7 @@ class MPU6050_Orientation(mpu6050):
         # Når bufferen har nok data, filtrer og vurder periodisiteten
         if len(self.raw_data_buffer) == self.window_size:
             # Filtrer dataene
-            filtered_data = self.highpass_filter(list(self.raw_data_buffer), cutoff=0.5, fs=self.sample_rate, order=5)
+            filtered_data = self.raw_data_buffer #self.highpass_filter(list(self.raw_data_buffer), cutoff=0.1, fs=self.sample_rate, order=5)
             self.data_buffer.extend(filtered_data)
 
             # Vurder periodisiteten basert på de filtrerte dataene
