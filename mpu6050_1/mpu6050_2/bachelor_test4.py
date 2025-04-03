@@ -160,8 +160,8 @@ class MPU6050_Orientation(mpu6050):
     def gi_status_aks(self):
         # Hent akselerasjonsdata
         data = self.get_data()
-        accel_data = data[accel_data]
-        gyro_data = data[gyro_data]
+        accel_data = data[0]
+        gyro_data = data[1]
         tot_G = math.sqrt(accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2)
         tot_Gyro = math.sqrt(gyro_data['x']**2 + gyro_data['y']**2 + gyro_data['z']**2)
         # Legg til den nyeste målingen i en buffer for filtrering
