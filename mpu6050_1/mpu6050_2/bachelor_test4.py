@@ -159,9 +159,10 @@ class MPU6050_Orientation(mpu6050):
 
     def gi_status_aks(self):
         # Hent akselerasjonsdata
-        accel_data = self.get_data([accel_data])
+        data = self.get_data()
+        accel_data = data[accel_data]
+        gyro_data = data[gyro_data]
         tot_G = math.sqrt(accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2)
-        gyro_data = self.get_data([gyro_data])
         tot_Gyro = math.sqrt(gyro_data['x']**2 + gyro_data['y']**2 + gyro_data['z']**2)
         # Legg til den nyeste målingen i en buffer for filtrering
         self.raw_data_buffer.append(tot_G)
@@ -198,5 +199,6 @@ if __name__ == "__main__":
         status = mpu.gi_status_aks()
         print(f"Total G: {status['total_G']}")
         print(status['is_periodic'])
+        time.sleep(0.01)
 
     
