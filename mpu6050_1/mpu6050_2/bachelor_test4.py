@@ -11,7 +11,7 @@ import math # For sqrt
 # MPU6050 & Datainnsamling
 sensor_address = 0x68      # Standard I2C adresse
 target_sample_rate_hz = 100 # Ønsket samplingsfrekvens (Hz)
-collection_duration_s = 20  # Hvor lenge data skal samles inn (sekunder)
+collection_duration_s = 5  # Hvor lenge data skal samles inn (sekunder)
 
 # Stabilitetsanalyse parametere (fra MATLAB)
 low_cutoff_freq = 0.5  # Lavpassfilter cutoff (Hz)
