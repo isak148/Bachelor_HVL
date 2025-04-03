@@ -208,7 +208,7 @@ if __name__ == "__main__":
             writer = csv.writer(file)
             if not file_exists:
                     writer.writerow(["G"])
-            writer.writerow(status['total_G'])
+            writer.writerow([status['total_G']])
 
 
         time.sleep(0.01)
