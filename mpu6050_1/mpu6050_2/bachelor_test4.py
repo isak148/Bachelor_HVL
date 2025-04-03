@@ -1,128 +1,119 @@
 # -*- coding: utf-8 -*-
-import time
 import numpy as np
+import pandas as pd # For efficient rolling window calculations
+from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
-from mpu6050 import mpu6050 # Importer MPU6050 biblioteket du bruker
 
-# --- Innstillinger ---
-sensor_address = 0x68      # Standard I2C adresse for MPU6050
-target_sample_rate_hz = 100 # Ønsket samplingsfrekvens (Hz)
-collection_duration_s = 10  # Hvor lenge data skal samles inn (sekunder)
-use_g_force = True         # Hent data som G-krefter (True) eller m/s^2 (False)?
+# --- Configuration ---
+fs = 100  # Sampling frequency in Hz (adjust as needed)
+low_cutoff_freq = 0.5  # Low-pass filter cutoff frequency in Hz
+order = 4  # Filter order
+window_size = 100  # Window size for standard deviation (samples)
+threshold_multiplier = 1.5 # Multiplier for median std dev to find threshold
+exclude_end_samples = 100 # Number of samples to ignore at the very end
 
-# --- Initialiser Sensor ---
-try:
-    sensor = mpu6050(sensor_address)
-    print(f"MPU6050 initialisert på adresse {hex(sensor_address)}.")
-    # Optional: Sett sensor-rekkevidde hvis ønskelig (fra tidligere kode)
-    # sensor.set_accel_range(sensor.ACCEL_RANGE_2G)
-except Exception as e:
-    print(f"Kunne ikke initialisere MPU6050: {e}")
-    print("Sjekk tilkobling og I2C-adresse.")
+# --- Step 1: Get Input Data ---
+# In a real application, 'signal_data' would come from your MPU6050 readings
+# (e.g., tot_G_buffer, x_data, etc., converted to a NumPy array).
+# For demonstration, let's create some sample data:
+print("Generating sample data for demonstration...")
+duration = 20 # seconds
+num_samples = duration * fs
+t = np.linspace(0, duration, num_samples, endpoint=False)
+# Combine a slow sine wave, some stable periods, and noise
+signal_data = (
+    0.5 * np.sin(2 * np.pi * 0.2 * t) # Slow oscillation
+    + np.random.randn(num_samples) * 0.1 # Noise
+)
+# Add stable periods (e.g., between t=5-8s and t=12-15s)
+stable_mask1 = (t >= 5) & (t < 8)
+stable_mask2 = (t >= 12) & (t < 15)
+signal_data[stable_mask1] = np.random.randn(np.sum(stable_mask1)) * 0.01 # Very low noise
+signal_data[stable_mask2] = 0.05 + np.random.randn(np.sum(stable_mask2)) * 0.01 # Low noise around a small offset
+print(f"Generated {len(signal_data)} samples.")
+
+# Ensure data is a NumPy array
+signal_data = np.array(signal_data)
+
+if len(signal_data) < window_size + exclude_end_samples:
+    print(f"Error: Signal length ({len(signal_data)}) is too short for the chosen window size ({window_size}) and end exclusion ({exclude_end_samples}).")
     exit()
 
-# --- Datainnsamling ---
-print(f"Starter datainnsamling i {collection_duration_s} sekunder...")
+# --- Step 2: Apply Low-pass Filter ---
+print(f"Applying low-pass filter (cutoff: {low_cutoff_freq} Hz)...")
+nyquist = 0.5 * fs
+low = low_cutoff_freq / nyquist
+b, a = butter(order, low, btype='low', analog=False)
+filtered_signal = filtfilt(b, a, signal_data)
+print("Filtering complete.")
 
-timestamps = []
-x_data = []
-y_data = []
-z_data = []
+# --- Step 3: Calculate Rolling Standard Deviation ---
+# Using Pandas for efficient rolling calculation
+print(f"Calculating rolling standard deviation (window: {window_size} samples)...")
+s = pd.Series(filtered_signal)
+# The result index corresponds to the *end* of the window
+rolling_std_series = s.rolling(window=window_size, center=False).std()
+print("Rolling standard deviation calculated.")
 
-start_time = time.time()
-loop_start_time = start_time
-actual_samples = 0
+# --- Step 4: Identify Stable Points ---
+# Calculate threshold based on the median of the non-NaN std values
+valid_rolling_std = rolling_std_series.dropna() # Remove NaNs from the start
+if len(valid_rolling_std) == 0:
+    print("Error: Could not calculate rolling standard deviation (perhaps window size is too large?).")
+    exit()
 
-while (time.time() - start_time) < collection_duration_s:
-    loop_start_time = time.time() # Nøyaktig tid ved start av loop
+threshold = valid_rolling_std.median() * threshold_multiplier
+print(f"Stability threshold calculated: {threshold:.4f} (based on median {valid_rolling_std.median():.4f} * {threshold_multiplier})")
 
-    try:
-        # Les akselerometerdata
-        accel_data = sensor.get_accel_data(g=use_g_force)
+# Find points where rolling std is below the threshold
+# Boolean mask aligns with the original filtered_signal length
+stable_mask = rolling_std_series < threshold # This mask includes NaNs which evaluate to False
 
-        # Lagre data og tidspunkt
-        timestamps.append(loop_start_time) # Bruk tiden målingen ble tatt
-        x_data.append(accel_data['x'])
-        y_data.append(accel_data['y'])
-        z_data.append(accel_data['z'])
-        actual_samples += 1
+# Get the indices where the mask is True
+stable_indices_raw = np.where(stable_mask)[0]
+print(f"Found {len(stable_indices_raw)} potential stable points.")
 
-    except Exception as e:
-        print(f"Feil under lesing fra sensor: {e}")
-        # Kan legge inn en kort pause her hvis feil skjer ofte
-        # time.sleep(0.1)
+# --- Step 5: Exclude points near the end ---
+exclude_start_index = len(filtered_signal) - exclude_end_samples
+stable_indices_filtered = stable_indices_raw[stable_indices_raw < exclude_start_index]
+print(f"Found {len(stable_indices_filtered)} stable points after excluding the last {exclude_end_samples} samples.")
 
-    # Prøv å opprettholde samplingsraten
-    loop_end_time = time.time()
-    processing_time = loop_end_time - loop_start_time
-    sleep_time = (1.0 / target_sample_rate_hz) - processing_time
-    if sleep_time > 0:
-        time.sleep(sleep_time)
-    # else:
-    #     print(f"Advarsel: Loop tar lengre tid ({processing_time:.4f}s) enn sample period ({1.0/target_sample_rate_hz:.4f}s)")
+# --- Step 6: Plot the results ---
+print("Generating plots...")
+plt.figure(figsize=(12, 9))
 
-
-print(f"Datainnsamling ferdig. {actual_samples} samples samlet.")
-if actual_samples < 2: # Trenger minst 2 punkter for å plotte en linje
-     print("Ikke nok data samlet for plotting.")
-     exit()
-
-# --- Databehandling og Plotting ---
-
-# Konverter lister til NumPy arrays
-t_np = np.array(timestamps)
-x_np = np.array(x_data)
-y_np = np.array(y_data)
-z_np = np.array(z_data)
-
-# Beregngått tid fra start (første timestamp = 0)
-t_elapsed = t_np - t_np[0]
-
-# Beregn faktisk gjennomsnittlig samplingsfrekvens
-actual_fs = actual_samples / (t_np[-1] - t_np[0]) if len(t_np)>1 else 0
-print(f"Faktisk gjennomsnittlig samplingsfrekvens: {actual_fs:.2f} Hz")
-
-# Sett Y-akse label basert på valg
-if use_g_force:
-    ylabel_text = 'Akselerasjon (G)'
-else:
-    ylabel_text = 'Akselerasjon (m/s^2)' # Hvis du brukte g=False
-
-# Plot dataene
-plt.figure(figsize=(12, 8)) # Litt større figur
-
-# Subplot for X-data
+# Plot the filtered signal
 plt.subplot(3, 1, 1)
-plt.plot(t_elapsed, x_np, label='X')
-plt.title('Akselerometer X Data')
-plt.xlabel('Tid (s)')
-plt.ylabel(ylabel_text)
+plt.plot(filtered_signal, label='Filtered Signal')
+plt.title(f'Filtered Signal (Low-pass {low_cutoff_freq} Hz)')
+plt.xlabel('Sample Index')
+plt.ylabel('Amplitude')
 plt.grid(True)
 plt.legend()
 
-# Subplot for Y-data
+# Plot the filtered signal and highlight all identified stable points (before end exclusion)
 plt.subplot(3, 1, 2)
-plt.plot(t_elapsed, y_np, label='Y', color='orange')
-plt.title('Akselerometer Y Data')
-plt.xlabel('Tid (s)')
-plt.ylabel(ylabel_text)
+plt.plot(filtered_signal, label='Filtered Signal')
+# Plot stable points using the filtered indices
+plt.plot(stable_indices_filtered, filtered_signal[stable_indices_filtered], 'ro', markersize=4, label=f'Stable Points (< {threshold:.4f})')
+plt.title(f'Stable Sections Identified (Excluding Last {exclude_end_samples} Samples)')
+plt.xlabel('Sample Index')
+plt.ylabel('Amplitude')
 plt.grid(True)
 plt.legend()
 
-# Subplot for Z-data
+# Plot only the stable points on top of the original filtered signal for clarity
 plt.subplot(3, 1, 3)
-plt.plot(t_elapsed, z_np, label='Z', color='green')
-plt.title('Akselerometer Z Data')
-plt.xlabel('Tid (s)')
-plt.ylabel(ylabel_text)
+plt.plot(filtered_signal, color='lightblue', label='_nolegend_') # Plot full signal faintly
+plt.plot(stable_indices_filtered, filtered_signal[stable_indices_filtered], 'ro', markersize=4, label=f'Stable Points (< {threshold:.4f})')
+plt.title('Stable Points Highlighted')
+plt.xlabel('Sample Index')
+plt.ylabel('Amplitude')
 plt.grid(True)
 plt.legend()
 
-# Juster layout for å unngå overlapp
-plt.tight_layout()
 
-# Vis plottet
-print("Viser plott...")
+plt.tight_layout()
 plt.show()
 
-print("Ferdig.")
+print("Plot displayed.")
