@@ -32,7 +32,7 @@ class MPU6050_Orientation(mpu6050):
 
         # variabler for FFS 
         self.sample_rate = 100  # Hz
-        self.window_size = self.sample_rate * 5  # 5 sekunder med data    
+        self.window_size = self.sample_rate * 2  # 5 sekunder med data    
         self.data_buffer = deque(maxlen=self.window_size)
         self.raw_data_buffer = deque(maxlen=self.window_size)
         self.last_periodicity_status = "ubestemt"
@@ -114,7 +114,7 @@ class MPU6050_Orientation(mpu6050):
     
 
 
-    def vurder_stabilitet_G(tot_G_values, ro_grense=1.0, normal_aktivitet_grense=1.5, høy_aktivitet_grense=1.5, toleranse=0.05):
+    def vurder_stabilitet_G(self, tot_G_values, ro_grense=1.0, normal_aktivitet_grense=1.1, høy_aktivitet_grense=1.1, toleranse=0.05):
         """
         Funksjon som vurderer aktivitet basert på tot_G.
         
@@ -127,7 +127,7 @@ class MPU6050_Orientation(mpu6050):
         """
         # Beregn gjennomsnittlig tot_G
         mean_tot_G = np.mean(tot_G_values)
-        
+        print(mean_tot_G)
         # Vurder aktivitetstilstandene basert på tot_G
         if mean_tot_G > høy_aktivitet_grense + toleranse:
             return "Høy aktivitet"  # Høy aktivitet (f.eks., intens akselerasjon)
@@ -205,15 +205,16 @@ if __name__ == "__main__":
         print(f"Total G: {status['total_G']}")
         print(status['is_periodic'])
 
+        '''
         file_path = "sensor_data_tot_G.csv"
         file_exists = os.path.exists(file_path)
-
+        
         with open(file_path, "a", newline='') as file:
             writer = csv.writer(file)
             if not file_exists:
                     writer.writerow(["G"])
             writer.writerow([status['total_G']])
-
+        '''
 
         time.sleep(0.01)
 
