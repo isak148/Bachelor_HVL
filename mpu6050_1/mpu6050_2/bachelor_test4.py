@@ -205,7 +205,7 @@ if __name__ == "__main__":
         print(f"Total G: {status['total_G']}")
         print(status['is_periodic'])
 
-        '''
+        
         file_path = "sensor_data_tot_G.csv"
         file_exists = os.path.exists(file_path)
         
@@ -214,7 +214,7 @@ if __name__ == "__main__":
             if not file_exists:
                     writer.writerow(["G"])
             writer.writerow([status['total_G']])
-        '''
+        
 
         time.sleep(0.01)
 
