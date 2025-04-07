@@ -178,6 +178,63 @@ class VL6180X:
         if not 20 <= period <= 2550:
             raise ValueError(
                 "Delay must be in 10 millisecond increments between 20 and 2550 milliseconds"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
             )
 
         period_reg = (period // 10) - 1

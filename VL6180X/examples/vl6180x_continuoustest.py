@@ -39,8 +39,8 @@ while True:
         if not file_exists:
             writer.writerow(["Range"])
         writer.writerow([range_mm])
-    # Delay for 10 ms
-    time.sleep(0.1)
+    # Delay for 2 ms
+    time.sleep(0.002)
 
 # Stop continuous mode. This is advised as the sensor
 # wouldn't stop measuring after the program has ended
