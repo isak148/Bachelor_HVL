@@ -171,23 +171,7 @@ class MPU6050_Orientation(mpu6050):
                 else:
                     level = 2 # Middels aktivitet (verken Høy eller Lav)
 
-                # Lagre klassifiseringen
-                classification_history.append(level)
-                print(f"Vindu klassifisert: Nivå {level} (Maks G: {max_value_in_window:.3f})")
-
-                # --- Sjekk om gjennomsnitt skal beregnes ---
-                if len(classification_history) > 0 and len(classification_history) % avg_group_size == 0:
-                    # Ta ut de siste 'avg_group_size' klassifiseringene
-                    last_group = classification_history[-avg_group_size:]
-                    # Beregn gjennomsnitt og rund av
-                    avg_level = np.mean(last_group)
-                    rounded_avg_level = round(avg_level)
-
-                    print(f"-----------------------------------------------------")
-                    print(f"Gj.snitt siste {avg_group_size} vinduer ({avg_group_size * window_duration_s:.1f}s): {avg_level:.2f}")
-                    print(f"Avrundet nivå: {rounded_avg_level} (1=Lav, 2=Middels, 3=Høy)")
-                    print(f"-----------------------------------------------------")
-
+                
 
         except Exception as e:
             print(f"Feil under lesing/prosessering: {e}")
@@ -260,8 +244,22 @@ if __name__ == "__main__":
     
     while True:
         status = mpu.gi_status_aks()
-        print(f"Total G: {status['total_G']}")
-        print(status['is_periodic'])
+        # Lagre klassifiseringen
+        classification_history.append(level)
+        print(f"Vindu klassifisert: Nivå {level} (Maks G: {max_value_in_window:.3f})")
+
+        # --- Sjekk om gjennomsnitt skal beregnes ---
+        if len(classification_history) > 0 and len(classification_history) % avg_group_size == 0:
+            # Ta ut de siste 'avg_group_size' klassifiseringene
+            last_group = classification_history[-avg_group_size:]
+            # Beregn gjennomsnitt og rund av
+            avg_level = np.mean(last_group)
+            rounded_avg_level = round(avg_level)
+
+            print(f"-----------------------------------------------------")
+            print(f"Gj.snitt siste {avg_group_size} vinduer ({avg_group_size * window_duration_s:.1f}s): {avg_level:.2f}")
+            print(f"Avrundet nivå: {rounded_avg_level} (1=Lav, 2=Middels, 3=Høy)")
+            print(f"-----------------------------------------------------")
 
         
         file_path = "sensor_data_tot_G.csv"
