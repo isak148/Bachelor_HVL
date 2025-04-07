@@ -31,7 +31,7 @@ class MPU6050_Orientation(mpu6050):
         # Felles variabler for statusvurdering
         self.sample_rate = 100  # Hz (Samples per sekund)
         # Samme vindusstørrelse brukes for både akselerometer og gyro analyse
-        self.window_size = self.sample_rate * 1 # 1 sekunds vindu (100 samples)
+        self.window_size = 50 # 0.5 sekunds vindu (50 samples)
 
         # Buffere for rådata (magnitude)
         self.raw_accel_buffer = deque(maxlen=self.window_size)
@@ -117,7 +117,7 @@ class MPU6050_Orientation(mpu6050):
         return y
 
     # --- Vurderingsfunksjoner ---
-    def vurder_stabilitet_G(self, tot_G_values, ro_grense=1.0, høy_aktivitet_grense=1.1, toleranse=0.05):
+    def vurder_stabilitet_G(self, tot_G_values, ro_grense=1.0, høy_aktivitet_øvre_grense=1.65,høy_aktivitet_nedre_grense=0.65 , toleranse=0.05):
             """
             Vurderer akselerometer-aktivitet basert på terskler INNENFOR vinduet,
             UTEN å beregne gjennomsnitt av tot_G_values.
@@ -132,11 +132,10 @@ class MPU6050_Orientation(mpu6050):
             # Definer grenser for klassifisering
             lav_øvre_grense = ro_grense + toleranse
             lav_nedre_grense = ro_grense - toleranse
-            høy_nedre_grense = høy_aktivitet_grense + toleranse # Høy aktivitet er OVER denne
-
+            
             nivå = 0
             # 1. Sjekk for Høy aktivitet (Nivå 3): Holder det at MINST ÉN verdi er over grensen?
-            if np.any(g_array > høy_nedre_grense):
+            if np.any((g_array > høy_aktivitet_øvre_grense)|(g_array < høy_aktivitet_nedre_grense)):
                 nivå = 3 # Høy
             # 2. Sjekk for Lav aktivitet (Nivå 1): Må ALLE verdier være innenfor ro-intervallet?
             elif np.all((g_array >= lav_nedre_grense) & (g_array <= lav_øvre_grense)):
@@ -268,7 +267,7 @@ if __name__ == "__main__":
                           f"Gyro: {status_data['total_Gyro']:.1f}dps [{status_data['gyro_status']}]")
                     last_print_time = current_loop_time
 
-                sleep(0.005)
+                sleep(0.01)
 
     except KeyboardInterrupt:
         print("\nAvslutter programmet.")
