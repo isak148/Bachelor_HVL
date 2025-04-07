@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Sanntids deteksjon av "pustestopp" (stabil avstand) og estimering av
-bevegelsesfrekvens ved bruk av VL6180X.
+bevegelsesfrekvens *etter* pustestopp ved bruk av VL6180X.
 """
 
 import time
@@ -31,12 +31,13 @@ FLATNESS_THRESHOLD = 2.0      # ENDRE: Maks std dev for "stabil" avstand (i mm?)
 APNEA_DURATION_THRESHOLD_SEC = 5.0 # ENDRE: Min varighet av stabil avstand for deteksjon (sekunder)
 
 # Parametere for frekvensanalyse (basert på topper i avstandssignalet)
-FREQ_ANALYSIS_WINDOW_SEC = 10.0 # Vindu for frekvensanalyse (sekunder) - lengre enn flathetssjekk
+FREQ_ANALYSIS_WINDOW_SEC = 10.0 # Vindu for frekvensanalyse (sekunder) - MÅ være >= FLATNESS_CHECK_WINDOW_SEC
 SMOOTHING_WINDOW_FREQ_SEC = 0.7 # Smoothing vindu før toppdeteksjon (sekunder) - Kan trenge justering
 POLYNOMIAL_ORDER_FREQ = 3       # Orden for Savitzky-Golay smoothing
 PEAK_MIN_DISTANCE_SEC = 0.5     # ENDRE: Minimum tid mellom "bevegelsestopper" (sekunder?)
 PEAK_MIN_PROMINENCE = 5.0       # ENDRE: Minimum "viktighet" for en topp (mm?)
 MAX_REASONABLE_FREQ_HZ = 5.0    # ENDRE: Maks sannsynlig bevegelsesfrekvens (Hz?)
+NUM_PEAKS_FOR_FREQ = 3          # Antall topper å samle etter pustestopp for frekvensberegning (3 topper = 2 perioder)
 # ----------------------------------------------------------
 
 # --- Beregn bufferstørrelser basert på parametere ---
@@ -48,10 +49,10 @@ if min_apnea_points < 1: min_apnea_points = 1
 
 # For frekvensanalyse
 freq_analysis_window_points = round(FREQ_ANALYSIS_WINDOW_SEC * TARGET_FS)
-if freq_analysis_window_points < 5: freq_analysis_window_points = 5 # Trenger litt data
+if freq_analysis_window_points < 5: freq_analysis_window_points = 5
 smoothing_window_freq_points = round(SMOOTHING_WINDOW_FREQ_SEC * TARGET_FS)
-if smoothing_window_freq_points < 3: smoothing_window_freq_points = 3 # Min for savgol
-if smoothing_window_freq_points % 2 == 0: smoothing_window_freq_points += 1 # Må være oddetall
+if smoothing_window_freq_points < 3: smoothing_window_freq_points = 3
+if smoothing_window_freq_points % 2 == 0: smoothing_window_freq_points += 1
 peak_min_distance_points = round(PEAK_MIN_DISTANCE_SEC * TARGET_FS)
 if peak_min_distance_points < 1: peak_min_distance_points = 1
 
@@ -65,6 +66,7 @@ print(f"Smoothing (frekvens): {SMOOTHING_WINDOW_FREQ_SEC} s ({smoothing_window_f
 print(f"Min peak avstand: {PEAK_MIN_DISTANCE_SEC} s ({peak_min_distance_points} pnt)")
 print(f"Min peak prominens: {PEAK_MIN_PROMINENCE}")
 print(f"Maks fornuftig frekvens: {MAX_REASONABLE_FREQ_HZ} Hz")
+print(f"Antall topper for post-apnea frekvens: {NUM_PEAKS_FOR_FREQ}")
 print("----------------------")
 print("VIKTIG: Juster parametere (spesielt terskler, prominens, frekvensgrense)!")
 print("Starter sensor og analyse...")
@@ -83,17 +85,18 @@ except Exception as e:
     exit()
 
 # --- Databuffere ---
-# For flathetssjekk (standardavvik)
 data_buffer_stddev = deque(maxlen=flatness_check_window_points)
-# For å sjekke varighet av flathet
 flat_state_buffer = deque(maxlen=min_apnea_points)
-# For frekvensanalyse (lengre buffer)
 freq_analysis_buffer = deque(maxlen=freq_analysis_window_points)
 
 # --- Tilstandsvariabler ---
-apnea_active = False # Holder styr på om vi er i en "pustestopp"-tilstand
-last_valid_bpm = None # Holder siste gyldige beregnede frekvens (i BPM)
-last_print_time = time.monotonic() # For å unngå å spamme konsollen
+apnea_active = False
+last_valid_bpm = None
+last_print_time = time.monotonic()
+# Nye tilstandsvariabler for post-apnea frekvensberegning
+calculating_post_apnea_freq = False
+post_apnea_peak_times = [] # Liste for å lagre tidspunkter for topper funnet etter apnea
+last_peak_add_time = 0 # For å unngå å legge til samme topp for raskt
 
 # --- Hovedløkke ---
 try:
@@ -111,7 +114,9 @@ try:
 
         # --- Behandle KUN gyldige målinger ---
         if status == adafruit_vl6180x.ERROR_NONE:
-            # 2. Legg til måling i begge databuffere
+            current_time = time.monotonic() # Få nåværende tid tidlig
+
+            # 2. Legg til måling i buffere
             data_buffer_stddev.append(range_mm)
             freq_analysis_buffer.append(range_mm)
 
@@ -128,84 +133,113 @@ try:
                 if all(flat_state_buffer):
                     apnea_detected_now = True
 
-            # === Frekvensanalyse (kun når bufferet er fullt) ===
-            current_bpm = None # BPM for denne analysen
+            # === Toppdeteksjon (kjøres når frekvensvindu er fullt) ===
+            peaks_indices_in_chunk = [] # Nullstill for denne runden
+            smoothed_chunk = []
             if len(freq_analysis_buffer) == freq_analysis_buffer.maxlen:
-                # Konverter til numpy array for signalbehandling
                 signal_chunk = np.array(freq_analysis_buffer)
-
-                # Smooth data FØR toppdeteksjon
+                # Smooth data
                 if len(signal_chunk) >= smoothing_window_freq_points:
                      try:
                          smoothed_chunk = savgol_filter(signal_chunk,
                                                         window_length=smoothing_window_freq_points,
                                                         polyorder=POLYNOMIAL_ORDER_FREQ)
-                     except ValueError as sve:
-                         # Kan skje hvis window > len(signal) eller polyorder >= window
-                         # print(f"Smoothing feil: {sve}. Bruker usmoothet data.")
+                     except ValueError:
                          smoothed_chunk = signal_chunk # Fallback
                 else:
-                    # For kort chunk til å smoothe skikkelig
                     smoothed_chunk = signal_chunk
 
-                # Finn topper
+                # Finn topper i det smoothede vinduet
                 try:
-                    peaks, properties = find_peaks(smoothed_chunk,
-                                                   distance=peak_min_distance_points,
-                                                   prominence=PEAK_MIN_PROMINENCE)
-                except Exception as fp_e:
-                    # print(f"Find_peaks feil: {fp_e}") # Debugging
-                    peaks = [] # Ingen topper ved feil
+                    peaks_indices, _ = find_peaks(smoothed_chunk,
+                                                  distance=peak_min_distance_points,
+                                                  prominence=PEAK_MIN_PROMINENCE)
+                    if len(peaks_indices) > 0:
+                        peaks_indices_in_chunk = peaks_indices # Lagre funnede indekser
+                except Exception:
+                    peaks_indices_in_chunk = []
 
-                # Beregn frekvens hvis vi har minst 2 topper
-                if len(peaks) >= 2:
-                    # Beregn perioder i samples og sekunder
-                    periods_samples = np.diff(peaks)
-                    periods_sec = periods_samples / TARGET_FS
 
-                    # Unngå divisjon med null hvis periode er 0 (bør ikke skje med distance>0)
-                    valid_period_mask = periods_sec > 1e-6
-                    periods_sec = periods_sec[valid_period_mask]
+            # === Post-Apnea Frekvensberegning (Innsamling og Kalkulering) ===
+            # Sjekk om vi er i post-apnea modus og om en *ny* topp er detektert *nylig* i vinduet
+            if calculating_post_apnea_freq and len(peaks_indices_in_chunk) > 0:
+                # Sjekk om den siste toppen i vinduet er nær slutten av vinduet
+                last_peak_index_in_chunk = peaks_indices_in_chunk[-1]
+                # Hvor "nylig" må toppen være? (f.eks. innenfor de siste ~3 samples)
+                peak_is_recent_threshold = 3
+                if last_peak_index_in_chunk >= (len(smoothed_chunk) - peak_is_recent_threshold):
+                    # Unngå å legge til samme topp (eller topper for tett) raskt etter hverandre
+                    # Bruker en halv minimum peak-avstand som en heuristikk
+                    if current_time - last_peak_add_time > (PEAK_MIN_DISTANCE_SEC / 2.0):
+                        # print(f"DEBUG: Recent peak detected at index {last_peak_index_in_chunk} at time {current_time:.2f}") # Debug
+                        post_apnea_peak_times.append(current_time)
+                        last_peak_add_time = current_time
+                        # print(f"DEBUG: Peaks collected: {len(post_apnea_peak_times)}/{NUM_PEAKS_FOR_FREQ}") # Debug
 
-                    if len(periods_sec) > 0:
-                        # Beregn frekvenser i Hz
-                        instant_frequencies_hz = 1.0 / periods_sec
+                        # Sjekk om vi har samlet nok topper
+                        if len(post_apnea_peak_times) >= NUM_PEAKS_FOR_FREQ:
+                            # print(f"DEBUG: Calculating post-apnea freq from times: {post_apnea_peak_times}") # Debug
+                            # Beregn perioder og frekvens basert på de innsamlede tidspunktene
+                            periods_sec = np.diff(post_apnea_peak_times)
+                            valid_period_mask = periods_sec > 1e-6 # Unngå divisjon med 0
+                            periods_sec = periods_sec[valid_period_mask]
 
-                        # Filtrer bort urimelig høye frekvenser
-                        valid_freq_mask = instant_frequencies_hz <= MAX_REASONABLE_FREQ_HZ
-                        valid_frequencies_hz = instant_frequencies_hz[valid_freq_mask]
+                            if len(periods_sec) > 0:
+                                instant_frequencies_hz = 1.0 / periods_sec
+                                # Filtrer bort urimelige frekvenser
+                                valid_freq_mask = instant_frequencies_hz <= MAX_REASONABLE_FREQ_HZ
+                                valid_frequencies_hz = instant_frequencies_hz[valid_freq_mask]
 
-                        # Beregn gjennomsnittlig BPM hvis det er gyldige frekvenser
-                        if len(valid_frequencies_hz) > 0:
-                            mean_freq_hz = np.mean(valid_frequencies_hz)
-                            current_bpm = mean_freq_hz * 60
-                            last_valid_bpm = current_bpm # Oppdater siste gyldige BPM
-                        # else:
-                            # Ingen gyldige frekvenser funnet i dette vinduet
-                            # last_valid_bpm beholdes fra forrige runde
-                # else:
-                     # Ikke nok topper funnet i dette vinduet
-                     # last_valid_bpm beholdes fra forrige runde
+                                if len(valid_frequencies_hz) > 0:
+                                    mean_freq_hz = np.mean(valid_frequencies_hz)
+                                    current_bpm = mean_freq_hz * 60
+                                    last_valid_bpm = current_bpm # Oppdater siste gyldige
+                                    print(f"{time.strftime('%H:%M:%S')}: === Post-pustestopp frekvens: {last_valid_bpm:.1f} BPM (basert på {len(post_apnea_peak_times)} topper) ===")
+                                else:
+                                    print(f"{time.strftime('%H:%M:%S')}: Kunne ikke beregne gyldig post-pustestopp frekvens (filtrert).")
+                                    last_valid_bpm = None # Nullstill hvis filtrert bort
+                            else:
+                                 print(f"{time.strftime('%H:%M:%S')}: Kunne ikke beregne gyldig post-pustestopp frekvens (perioder).")
+                                 last_valid_bpm = None # Nullstill
 
-            # === Administrer tilstand og skriv ut ===
-            current_time = time.monotonic()
+                            # Nullstill for neste post-apnea periode
+                            calculating_post_apnea_freq = False
+                            post_apnea_peak_times = []
+                            # La systemet gå litt før neste "OK" melding
+                            last_print_time = current_time + 2.0
+
+
+            # === Administrer Hovedtilstand og skriv ut ===
             status_changed = False
-
+            # Pustestopp starter NÅ
             if apnea_detected_now and not apnea_active:
-                print(f"{time.strftime('%H:%M:%S')}: PUSTESTOPP DETEKTERT! (Stabil avstand > {APNEA_DURATION_THRESHOLD_SEC:.1f} s)")
+                print(f"{time.strftime('%H:%M:%S')}: *** PUSTESTOPP DETEKTERT! (Stabil avstand > {APNEA_DURATION_THRESHOLD_SEC:.1f} s) ***")
                 apnea_active = True
                 status_changed = True
+                # Nullstill frekvensberegning hvis apnea starter
+                calculating_post_apnea_freq = False
+                post_apnea_peak_times = []
+
+            # Pustestopp slutter NÅ
             elif not apnea_detected_now and apnea_active:
-                print(f"{time.strftime('%H:%M:%S')}: Pustestopp avsluttet.")
+                print(f"{time.strftime('%H:%M:%S')}: --- Pustestopp avsluttet. Måler frekvens... ---")
                 apnea_active = False
                 status_changed = True
+                # Start innsamling for post-apnea frekvens
+                calculating_post_apnea_freq = True
+                post_apnea_peak_times = [] # Start med tom liste
+                last_peak_add_time = 0
 
-            # Skriv ut status med frekvens med jevne mellomrom HVIS IKKE i pustestopp
-            if not apnea_active and (current_time - last_print_time > 5.0 or status_changed):
-                freq_str = f"{last_valid_bpm:.1f} BPM" if last_valid_bpm is not None else "Beregner..."
-                print(f"{time.strftime('%H:%M:%S')}: OK - Bevegelsesfrekvens: {freq_str}")
-                last_print_time = current_time
-            elif status_changed: # Oppdater tiden hvis status endret seg
+            # Oppdater utskriftstidspunkt hvis status endret seg
+            if status_changed:
+                 last_print_time = current_time
+
+            # Skriv ut OK melding sjeldnere hvis ingenting spesielt skjer
+            # og vi IKKE er i pustestopp og IKKE aktivt måler post-apnea frekvens
+            elif not apnea_active and not calculating_post_apnea_freq and (current_time - last_print_time > 10.0):
+                 # Viser siste gyldige frekvens (fra forrige post-apnea eller eldre)
+                 freq_str = f"{last_valid_bpm:.1f} BPM" if last_valid_bpm is not None else "N/A"
+                 print(f"{time.strftime('%H:%M:%S')}: OK - Siste kjente frekvens: {freq_str}")
                  last_print_time = current_time
 
 
@@ -214,6 +248,7 @@ try:
              error_string = adafruit_vl6180x.RANGE_STATUS.get(status, f"Ukjent ({status})")
              current_time = time.monotonic()
              if current_time - last_print_time > 5.0:
+                 # Unngå å spamme ved kontinuerlige feil
                  print(f"{time.strftime('%H:%M:%S')}: Ugyldig måling (Status: {error_string})")
                  last_print_time = current_time
 
@@ -230,5 +265,5 @@ except KeyboardInterrupt:
     print("\nAvslutter program...")
 
 finally:
-    # Rydd opp?
+    # Rydd opp? (Ikke nødvendigvis noe her)
     print("Program avsluttet.")
