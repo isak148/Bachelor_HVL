@@ -38,29 +38,29 @@ class VL6180XAnalyser:
             print(f"KRITISK FEIL: Kunne ikke initialisere I2C eller sensor: {e}")
             print("Fortsetter uten sensor. update() vil returnere feil.")
 
-                # Felles variabler for statusvurdering
-            self.sample_rate = 20  # Hz (Samples per sekund)
-            # Samme vindusstørrelse brukes for både akselerometer og gyro analyse
-            self.window_size = 40 # 2 sekunds vindu (50 samples)
+         # Felles variabler for statusvurdering
+         self.sample_rate = 20  # Hz (Samples per sekund)
+         # Samme vindusstørrelse brukes for både akselerometer og gyro analyse
+         self.window_size = 40 # 2 sekunds vindu (50 samples)
 
-             # Buffere for rådata (magnitude)
-            self.raw_accel_buffer = deque(maxlen=self.window_size)
-            self.raw_gyro_buffer = deque(maxlen=self.window_size)
+            # Buffere for rådata (magnitude)
+         self.raw_accel_buffer = deque(maxlen=self.window_size)
+         self.raw_gyro_buffer = deque(maxlen=self.window_size)
 
-            # Variabler for Akselerometer (G) stabilitetsvurdering
-            self.accel_stabilitet_historikk = []
-            self.last_computed_accel_status = "Initialiserer..."
+         # Variabler for Akselerometer (G) stabilitetsvurdering
+         self.accel_stabilitet_historikk = []
+         self.last_computed_accel_status = "Initialiserer..."
 
-            self.svar = "initialiserer"
+         self.svar = "initialiserer"
 
-    def vurder_stabilitet_G(self, tot_G_values, toleranse=5):
+    def vurder_stabilitet_G(self, tot_G_values, toleranse=10):
             """
             Vurderer akselerometer-aktivitet basert på terskler INNENFOR vinduet,
             UTEN å beregne gjennomsnitt av tot_G_values.
             Klassifiserer vinduet basert på om noen verdier er høye, eller om alle er lave.
             Den videre logikken med å samle 10 nivåer og ta snittet av DEM er beholdt.
             """
-            if not tot_G_values: return self.last_computed_accel_status
+            #if not tot_G_values: return self.last_computed_accel_status
 
             # Konverter til numpy array for enklere testing
             g_array = np.array(tot_G_values)
@@ -72,17 +72,18 @@ class VL6180XAnalyser:
             # Sjekk om forskjellen overstiger 5
             if max_val - min_val > toleranse:
                 #print("Avvik større enn 5!")
-                self.svar = "Puster ikke"
+                self.svar = "Puster"
             else:
                 #print("Alt innenfor grense.")
-                self.svar = "puster"
+                self.svar = "Puster Ikke"
 
+            self.last_computed_accel_status = self.svar
             return self.svar 
 
 
     def analyserer_stopp(self):
 
-        Range_data = self.sensor(Range_data)
+        Range_data = self.sensor.range
 
         self.raw_accel_buffer.append(Range_data)
         
