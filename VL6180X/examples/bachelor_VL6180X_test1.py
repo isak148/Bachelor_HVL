@@ -41,7 +41,7 @@ class VL6180XAnalyser:
          # Felles variabler for statusvurdering
          self.sample_rate = 20  # Hz (Samples per sekund)
          # Samme vindusstørrelse brukes for både akselerometer og gyro analyse
-         self.window_size = 40 # 2 sekunds vindu (50 samples)
+         self.window_size = 20 # 2 sekunds vindu (50 samples)
 
             # Buffere for rådata (magnitude)
          self.raw_accel_buffer = deque(maxlen=self.window_size)
@@ -53,7 +53,7 @@ class VL6180XAnalyser:
 
          self.svar = "initialiserer"
 
-    def vurder_stabilitet_G(self, tot_G_values, toleranse=10):
+    def vurder_stabilitet_G(self, tot_G_values, toleranse=5):
             """
             Vurderer akselerometer-aktivitet basert på terskler INNENFOR vinduet,
             UTEN å beregne gjennomsnitt av tot_G_values.
