@@ -146,6 +146,7 @@ class VL6180XAnalyser:
                     mean_freq_hz = np.mean(valid_frequencies_hz)
                     current_window_bpm = mean_freq_hz * 60
                     return current_window_bpm
+        
         return None
 
     def update(self) -> dict:
@@ -165,9 +166,10 @@ class VL6180XAnalyser:
         status = -1
         status_text = "Ukjent feil"
         try:
+            
             range_mm = self.sensor.range
             status = self.sensor.range_status
-            status_text = adafruit_vl6180x.RANGE_STATUS.get(status, f"Ukjent ({status})")
+           
         except Exception as e:
             status = -100
             status_text = f"Sensorlesefeil: {e}"
@@ -264,7 +266,7 @@ def kjør_sanntidsanalyse(params: dict):
                     freq_str = f"{status_resultat['frequency_bpm']:.1f} BPM" if status_resultat['frequency_bpm'] is not None else "N/A"
                     # Viser også siste gyldige range-måling for kontekst
                     range_str = f"{status_resultat['range_mm']}mm" if status_resultat['range_mm'] != -1 else "Ukjent"
-                    print(f"{time.strftime('%H:%M:%S')} | Pustestopp: {apnea_status_str} | Frekvens: {freq_str} | Range: {range_str}")
+                    print(f"{time.strftime('%H:%M:%S')} | Pustestopp: {apnea_status_str} | Frekvens: {freq_str}")
                     last_status_print_time = current_time
 
             # Kontroller løkkehastighet
