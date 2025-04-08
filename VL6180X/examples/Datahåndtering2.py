@@ -34,19 +34,19 @@ class VL6180XAnalyser:
     """
 
     def __init__(self,
-                 # Generelle parametere
-                 target_fs: float = 10.0,
-                 # Parametere for Pustestopp-deteksjon
-                 flatness_check_window_sec: float = 2.0,
-                 flatness_threshold: float = 2.0,
-                 apnea_duration_threshold_sec: float = 2.0,
-                 # Parametere for Frekvensanalyse
-                 freq_analysis_window_sec: float = 10.0,
-                 smoothing_window_freq_sec: float = 0.7,
-                 polynomial_order_freq: int = 3,
-                 peak_min_distance_sec: float = 0.5,
-                 peak_min_prominence: float = 5.0,
-                 max_reasonable_freq_hz: float = 5.0):
+        # Generelle parametere
+        target_fs: float = 10.0,
+        # Parametere for Pustestopp-deteksjon
+        flatness_check_window_sec: float = 2.0,
+        flatness_threshold: float = 2.0,
+        apnea_duration_threshold_sec: float = 2.0,
+        # Parametere for Frekvensanalyse
+        freq_analysis_window_sec: float = 10.0,
+        smoothing_window_freq_sec: float = 0.7,
+        polynomial_order_freq: int = 3,
+        peak_min_distance_sec: float = 0.5,
+        peak_min_prominence: float = 5.0,
+        max_reasonable_freq_hz: float = 5.0):
         """
         Initialiserer analysatoren med nødvendige parametere og sensor.
         (Se forrige versjon for detaljert Args beskrivelse)
