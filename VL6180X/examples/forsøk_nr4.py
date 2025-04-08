@@ -19,12 +19,14 @@ class AnalyseVL6180X:
         self.stable_start_time = None  # Legg til for å spore starten på stabil periode
         self.apnea_threshold = 2.0  # Sett en terskel for standardavvik for å definere stabilitet
         self.apnea_duration = 2.0  # Sett varighet for pustestopp [cite: 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123]
+        self.last_read_times = deque(maxlen=self.buffer_size) # Add this line
 
     def read_sensor(self):
         # Leser av verdien til sensoren og sender det til get_data
         try:
             distance = self.sensor.range
-            return distance
+            read_time = time.monotonic() # Get the current time
+            return distance, read_time # Return both distance and time
         except Exception as e:
             print(f"Kunne ikke lese sensor data: {e}")
             return None
@@ -34,7 +36,12 @@ class AnalyseVL6180X:
         # Dataen lagres og ser etter topper som videre blir sendt videre til frekvens_bergning for å se på tiden mellom toppene.
         distance = self.read_sensor()
         if distance is not None:
+            self.data_buffer.append(distance) 
+        result = self.read_sensor()
+        if result is not None:
+            distance, read_time = result # Unpack the result
             self.data_buffer.append(distance)
+            self.last_read_times.append(read_time) # Append the timestamp
 
     def pustestopp(self):
         # Sjekker etter stabilitet i dataen som indikerer at brukeren holder pusten
