@@ -98,17 +98,30 @@ class AnalyseVL6180X:
 
 
 if __name__ == "__main__":
-    i2c = busio.I2C(board.SCL, board.SDA)
-    sensor_analyzer = AnalyseVL6180X(i2c)
+  i2c = busio.I2C(board.SCL, board.SDA)
+  sensor_analyzer = AnalyseVL6180X(i2c)
+ 
 
-    try:
-        while True:
-            sensor_analyzer.get_data()
+  last_print_time = time.monotonic()
+  print_interval = 1.0  # Print status every 1 second
+  read_interval = 0.01 # Read sensor every 0.01 seconds (100Hz)
+  last_read_time = time.monotonic()
+ 
+
+  try:
+    while True:  # Main loop for sensor reading
+        if time.monotonic() - last_read_time >= read_interval:
+            sensor_analyzer.get_data()  # Read sensor data
+            last_read_time = time.monotonic()
+            
+
+        while time.monotonic() - last_print_time >= print_interval: # Independent loop for printing
             status = sensor_analyzer.gi_status()
+            print(f"Status: Pustestopp = {status['pustestopp']}, Frekvens = {status['frekvens']:.2f}")
+            last_print_time = time.monotonic()
+    
 
-            print(f"Status: Pustestopp = {status['pustestopp']}, Frekvens = {status['frekvens']})")
-            time.sleep(0.1)  # Leser sensoren med 10Hz
-    except KeyboardInterrupt:
-        print("Programmet avsluttet")
+  except KeyboardInterrupt:
+    print("Programmet avsluttet")
 
     
