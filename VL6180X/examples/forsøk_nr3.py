@@ -37,7 +37,7 @@ class VL6180XAnalyser:
                  # Pustestopp-deteksjon
                  flatness_check_window_sec: float = 2.0,
                  flatness_threshold: float = 2.0,
-                 apnea_duration_threshold_sec: float = 2.0,
+                 apnea_duration_threshold_sec: float =4.0,
                  # Frekvensanalyse
                  freq_analysis_window_sec: float = 10.0,
                  smoothing_window_freq_sec: float = 0.7,
@@ -198,7 +198,7 @@ class VL6180XAnalyser:
         try:
             range_mm = self.sensor.range
             status = self.sensor.range_status
-            status_text = adafruit_vl6180x.RANGE_STATUS.get(status, f"Ukjent ({status})")
+           
         except Exception as e:
             status = -100
             status_text = f"Sensorlesefeil: {e}"
@@ -277,7 +277,7 @@ def kjør_sanntidsanalyse(params: dict):
         return
 
     last_status_print_time = 0.0
-    print_interval_sec = 5.0
+    print_interval_sec = 1.0
 
     print("\nStarter sanntidsanalyse (Trykk Ctrl+C for å avslutte)...")
     try:
@@ -321,7 +321,7 @@ def kjør_sanntidsanalyse(params: dict):
         print("\nAvslutter program...")
     finally:
         print("Analysefunksjon avsluttet.")
-
+    return 
 
 # --- Hovedinngangspunkt ---
 if __name__ == "__main__":
