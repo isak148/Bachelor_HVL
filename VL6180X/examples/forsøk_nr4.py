@@ -37,22 +37,21 @@ class AnalyseVL6180X:
 
     def pustestopp(self):
         # Sjekker etter stabilitet i dataen som indikerer at brukeren holder pusten
-        # Sjekker etter stabilitet på ca. 2 sek
+        # Sjekker etter stabilitet: ingen endring i avstanden +- threshold i mer enn 2 sek
+
         if len(self.data_buffer) < self.buffer_size:
             return False  # Ikke nok data til å vurdere stabilitet
 
-        data_array = np.array(self.data_buffer)
-        std_dev = np.std(data_array)
-        is_stable = std_dev < self.apnea_threshold
+        data_window = list(self.data_buffer)[-int(self.apnea_duration * 10):]  # Get last 2 seconds of data (assuming 10Hz)
+        if not data_window:
+            return False  # Ingen data å sjekke
 
-        if is_stable:
-            if self.stable_start_time is None:
-                self.stable_start_time = time.monotonic()
-            elif time.monotonic() - self.stable_start_time >= self.apnea_duration:
-                return True  # Pustestopp oppdaget
-        else:
-            self.stable_start_time = None  # Reset timer hvis ikke stabil
-        return False
+        first_value = data_window[0]
+        for value in data_window:
+            if not (first_value - self.apnea_threshold <= value <= first_value + self.apnea_threshold):
+                return False  # Verdi utenfor terskel, ikke stabilt
+
+        return True  # Alle verdier innenfor terskel, stabilt
 
     def frekvens_bergening(self):
         # Beregner frekvensen på pustingen til brukeren over en lengere periode på ca. 10 sek
@@ -102,7 +101,7 @@ if __name__ == "__main__":
             sensor_analyzer.get_data()
             status = sensor_analyzer.gi_status()
 
-            print(f"Status: Pustestopp = {status['pustestopp']}, Frekvens = {status['frekvens']:.2f} ")
+            print(f"Status: Pustestopp = {status['pustestopp']}, Frekvens = {status['frekvens']})")
             time.sleep(0.1)  # Leser sensoren med 10Hz
     except KeyboardInterrupt:
         print("Programmet avsluttet")
