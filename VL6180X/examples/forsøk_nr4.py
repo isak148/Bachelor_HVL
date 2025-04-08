@@ -17,7 +17,7 @@ class AnalyseVL6180X:
         self.data_buffer = deque(maxlen=self.buffer_size)
         self.last_read_time = time.monotonic()  # legger til for å spore tidspunkt for siste avlesning
         self.stable_start_time = None  # Legg til for å spore starten på stabil periode
-        self.apnea_threshold = 2.0  # Sett en terskel for standardavvik for å definere stabilitet
+        self.apnea_threshold = 5.0  # Sett en terskel for standardavvik for å definere stabilitet
         self.apnea_duration = 2.0  # Sett varighet for pustestopp [cite: 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123]
         self.last_read_times = deque(maxlen=self.buffer_size) # Add this line
         self.sensor._load_settings()
@@ -111,17 +111,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Programmet avsluttet")
 
-        """
-        Traceback (most recent call last):
-  File "/home/Bachelor/Documents/Bachelor_HVL/VL6180X/examples/forsøk_nr4.py", line 113, in <module>
-    status = sensor_analyzer.gi_status()
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/Bachelor/Documents/Bachelor_HVL/VL6180X/examples/forsøk_nr4.py", line 97, in gi_status
-    frequency = self.frekvens_bergening()
-                ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/Bachelor/Documents/Bachelor_HVL/VL6180X/examples/forsøk_nr4.py", line 73, in frekvens_bergening
-    data_array = np.array(list(self.data_buffer))
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (2,) + inhomogeneous part.
-        
-        """
+    
