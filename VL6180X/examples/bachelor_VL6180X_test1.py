@@ -53,7 +53,7 @@ class VL6180XAnalyser:
 
          self.svar = "initialiserer"
 
-    def vurder_stabilitet_G(self, tot_G_values, toleranse=10):
+    def vurder_stabilitet_G(self, tot_G_values, toleranse=5):
             """
             Vurderer akselerometer-aktivitet basert på terskler INNENFOR vinduet,
             UTEN å beregne gjennomsnitt av tot_G_values.
