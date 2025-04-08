@@ -64,7 +64,7 @@ class AnalyseVL6180X:
             return None  # Ikke nok data til å beregne frekvens
 
         data_array = np.array(self.data_buffer)
-        peaks, _ = find_peaks(data_array)
+        peaks, properties = find_peaks(data_array, prominence=10)  # Add prominence threshold
 
         if len(peaks) < 2:
             return 0  # Kan ikke beregne frekvens med mindre enn 2 topper
