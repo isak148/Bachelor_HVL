@@ -68,7 +68,11 @@ class AnalyseVL6180X:
         # Bruker et sliding window for å kun se på de n siste toppene
         if len(self.data_buffer) < 2:
             return 0  # Trenger minst 2 datapunkter
-        data_array = np.array(self.data_buffer)
+        if self.data_buffer:
+
+            data_array = np.array(list(self.data_buffer))
+        else:
+            return 0
         peaks, properties = find_peaks(data_array, prominence=10)
     
         if len(peaks) < 2:
@@ -112,3 +116,18 @@ if __name__ == "__main__":
             time.sleep(0.1)  # Leser sensoren med 10Hz
     except KeyboardInterrupt:
         print("Programmet avsluttet")
+
+        """
+        Traceback (most recent call last):
+  File "/home/Bachelor/Documents/Bachelor_HVL/VL6180X/examples/forsøk_nr4.py", line 113, in <module>
+    status = sensor_analyzer.gi_status()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/Bachelor/Documents/Bachelor_HVL/VL6180X/examples/forsøk_nr4.py", line 97, in gi_status
+    frequency = self.frekvens_bergening()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/Bachelor/Documents/Bachelor_HVL/VL6180X/examples/forsøk_nr4.py", line 73, in frekvens_bergening
+    data_array = np.array(list(self.data_buffer))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (2,) + inhomogeneous part.
+        
+        """
