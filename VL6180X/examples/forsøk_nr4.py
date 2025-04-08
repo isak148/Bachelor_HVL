@@ -68,16 +68,12 @@ class AnalyseVL6180X:
         # Bruker et sliding window for å kun se på de n siste toppene
         if len(self.data_buffer) < 2:
             return 0  # Trenger minst 2 datapunkter
-        
-
         data_array = np.array(self.data_buffer)
         peaks, properties = find_peaks(data_array, prominence=10)
-        
-
+    
         if len(peaks) < 2:
             return 0  # Trenger minst 2 topper
         
-
         # Bruk de to siste toppene for å beregne frekvens
         if len(peaks) >= 2:
             peak_times = [self.last_read_times[i] for i in peaks[-2:] if i < len(self.last_read_times)]
@@ -89,7 +85,7 @@ class AnalyseVL6180X:
             return frequency
         else:
             return 0
-        return 0
+        
 
     def gi_status(self):
         # Gir ut infoen fra pustestopp og frekvensberging
