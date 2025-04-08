@@ -184,8 +184,8 @@ try:
             # === Periodisk Utskrift ===
             # Skriv ut pustestopp-status hvert 5. sekund
             if current_time - last_apnea_print_time > 5.0:
-                status_str = "AKTIV" if apnea_active else "INAKTIV"
-                print(f"{time.strftime('%H:%M:%S')}: Pustestopp: {status_str}")
+                status_str = "INAKTIV" if apnea_active else "AKTIV"
+                print(f"{time.strftime('%H:%M:%S')}: Pust: {status_str}")
                 last_apnea_print_time = current_time
 
             # Skriv ut frekvens hvert 5. sekund (uavhengig av pustestopp)
