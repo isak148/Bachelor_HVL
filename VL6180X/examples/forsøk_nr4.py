@@ -1,13 +1,13 @@
 import time
- import board
- import busio
- import numpy as np
- from collections import deque
- import adafruit_vl6180x
- from scipy.signal import find_peaks, savgol_filter
+import board
+import busio
+import numpy as np
+from collections import deque
+import adafruit_vl6180x
+from scipy.signal import find_peaks, savgol_filter
  
 
- class AnalyseVL6180X:
+class AnalyseVL6180X:
     def __init__(self, i2c, address=0x29):
         self.sensor = adafruit_vl6180x.VL6180X(i2c, address)
         self.buffer_size = 100
@@ -92,23 +92,23 @@ import time
         return status
  
 
- if __name__ == "__main__":
+if __name__ == "__main__":
     i2c = busio.I2C(board.SCL, board.SDA)
     sensor_analyzer = AnalyseVL6180X(i2c)
-    
+
 
     last_print_time = time.monotonic()
     print_interval = 1.0 # Print status every 1 second
     read_interval = 0.01 # Read sensor every 0.01 seconds (100Hz)
     last_read_time = time.monotonic()
-    
+
 
     try:
         while True: # Main loop for sensor reading
             if time.monotonic() - last_read_time >= read_interval:
                 sensor_analyzer.get_data() # Read sensor data
                 last_read_time = time.monotonic()
-    
+
 
             while time.monotonic() - last_print_time >= print_interval: # Independent loop for printing
                 status = sensor_analyzer.gi_status()
