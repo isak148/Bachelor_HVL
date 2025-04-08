@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Sanntids deteksjon av pustestopp (stabil avstand > 2s)
-OG uavhengig kontinuerlig estimering av bevegelsesfrekvens (over 10s vindu)
-ved bruk av VL6180X.
+Klassebasert sanntids deteksjon av pustestopp (stabil avstand)
+og estimering av bevegelsesfrekvens ved bruk av VL6180X.
+Hovedlogikk er flyttet til en egen funksjon for lesbarhet.
 """
 
 import time
@@ -17,204 +17,287 @@ except ImportError:
     print("Installer SciPy med: pip install scipy")
     exit()
 
-import adafruit_vl6180x
-
-# --- Parametere som MÅ justeres ---
-TARGET_FS = 10  # Ønsket antall målinger per sekund (Hz)
-
-# Parametere for PUSTESTOPP-deteksjon (stabil avstand)
-# Vindu for å sjekke flathet (bør være <= varighetsterskelen)
-FLATNESS_CHECK_WINDOW_SEC = 2.0
-# Terskel for standardavvik for å anse signalet som "flatt" (mm?)
-FLATNESS_THRESHOLD = 2.0
-# Min varighet av stabilitet for å trigge pustestopp (s) - ENDRET til 2.0s
-APNEA_DURATION_THRESHOLD_SEC = 2.0
-
-# Parametere for FREKVENSANALYSE (kontinuerlig)
-# Vindu for frekvensanalyse (s) - ENDRET til 10.0s
-FREQ_ANALYSIS_WINDOW_SEC = 10.0
-# Smoothing før toppdeteksjon (s)
-SMOOTHING_WINDOW_FREQ_SEC = 0.7
-POLYNOMIAL_ORDER_FREQ = 3       # Smoothing orden
-PEAK_MIN_DISTANCE_SEC = 0.5     # Min tid mellom topper (s)
-PEAK_MIN_PROMINENCE = 5.0       # Min topp-prominens (mm?)
-MAX_REASONABLE_FREQ_HZ = 5.0    # Maks fornuftig frekvens (Hz)
-# ----------------------------------------------------------
-
-# --- Beregn bufferstørrelser ---
-# Pustestopp
-flatness_check_window_points = round(FLATNESS_CHECK_WINDOW_SEC * TARGET_FS)
-if flatness_check_window_points < 2: flatness_check_window_points = 2
-min_apnea_points = round(APNEA_DURATION_THRESHOLD_SEC * TARGET_FS)
-if min_apnea_points < 1: min_apnea_points = 1
-
-# Frekvens
-freq_analysis_window_points = round(FREQ_ANALYSIS_WINDOW_SEC * TARGET_FS)
-if freq_analysis_window_points < 5: freq_analysis_window_points = 5
-smoothing_window_freq_points = round(SMOOTHING_WINDOW_FREQ_SEC * TARGET_FS)
-if smoothing_window_freq_points < 3: smoothing_window_freq_points = 3
-if smoothing_window_freq_points % 2 == 0: smoothing_window_freq_points += 1
-peak_min_distance_points = round(PEAK_MIN_DISTANCE_SEC * TARGET_FS)
-if peak_min_distance_points < 1: peak_min_distance_points = 1
-
-print("--- Konfigurasjon ---")
-print(f"Mål Samplingsfrekvens (fs): {TARGET_FS} Hz")
-print(f"* Pustestopp Deteksjon *")
-print(f"  Vindu flathet: {FLATNESS_CHECK_WINDOW_SEC} s ({flatness_check_window_points} pnt)")
-print(f"  Terskel flathet: {FLATNESS_THRESHOLD}")
-print(f"  Min varighet: {APNEA_DURATION_THRESHOLD_SEC} s ({min_apnea_points} pnt)")
-print(f"* Frekvens Analyse *")
-print(f"  Vindu analyse: {FREQ_ANALYSIS_WINDOW_SEC} s ({freq_analysis_window_points} pnt)")
-print(f"  Smoothing: {SMOOTHING_WINDOW_FREQ_SEC} s ({smoothing_window_freq_points} pnt), Orden: {POLYNOMIAL_ORDER_FREQ}")
-print(f"  Min peak avstand: {PEAK_MIN_DISTANCE_SEC} s ({peak_min_distance_points} pnt)")
-print(f"  Min peak prominens: {PEAK_MIN_PROMINENCE}")
-print(f"  Maks fornuftig frekvens: {MAX_REASONABLE_FREQ_HZ} Hz")
-print("----------------------")
-print("VIKTIG: Juster parametere!")
-print("Starter sensor og analyse...")
-
-# --- Initialiser I2C og Sensor ---
+# Importer det lokale Adafruit VL6180X biblioteket
 try:
-    i2c = busio.I2C(board.SCL, board.SDA)
-    sensor = adafruit_vl6180x.VL6180X(i2c)
-    print("VL6180X sensor initialisert.")
-except Exception as e:
-    print(f"Feil ved initialisering: {e}")
+    import adafruit_vl6180x
+except ImportError:
+    print("Feil: Kunne ikke importere 'adafruit_vl6180x'.")
+    print("Sørg for at biblioteket er installert eller tilgjengelig i PYTHONPATH.")
     exit()
 
-# --- Databuffere ---
-# Buffer for flathetssjekk (pustestopp)
-data_buffer_stddev = deque(maxlen=flatness_check_window_points)
-# Buffer for å sjekke varighet av flathet (pustestopp)
-flat_state_buffer = deque(maxlen=min_apnea_points)
-# Buffer for frekvensanalyse (lengre)
-freq_analysis_buffer = deque(maxlen=freq_analysis_window_points)
+# --- Klassen VL6180XAnalyser (samme som før) ---
+class VL6180XAnalyser:
+    """
+    En klasse for å analysere VL6180X sensordata i sanntid for å
+    detektere perioder med stabil avstand (apnea/pustestopp) og
+    estimere bevegelsesfrekvens.
+    """
 
-# --- Tilstandsvariabler ---
-apnea_active = False             # Er pustestopp aktiv NÅ?
-last_valid_bpm = None            # Siste gyldige beregnede frekvens
-last_freq_print_time = 0         # For periodisk utskrift av frekvens
-last_apnea_print_time = 0        # For periodisk utskrift av pustestopp-status
+    def __init__(self,
+                 # Generelle parametere
+                 target_fs: float = 10.0,
+                 # Parametere for Pustestopp-deteksjon
+                 flatness_check_window_sec: float = 2.0,
+                 flatness_threshold: float = 2.0,
+                 apnea_duration_threshold_sec: float = 2.0,
+                 # Parametere for Frekvensanalyse
+                 freq_analysis_window_sec: float = 10.0,
+                 smoothing_window_freq_sec: float = 0.7,
+                 polynomial_order_freq: int = 3,
+                 peak_min_distance_sec: float = 0.5,
+                 peak_min_prominence: float = 5.0,
+                 max_reasonable_freq_hz: float = 5.0):
+        """
+        Initialiserer analysatoren med nødvendige parametere og sensor.
+        (Se forrige versjon for detaljert Args beskrivelse)
+        """
+        print("Initialiserer VL6180XAnalyser...")
+        self.target_fs = target_fs
+        if self.target_fs <= 0:
+            raise ValueError("target_fs må være positiv.")
 
-# --- Hovedløkke ---
-try:
-    while True:
-        loop_start_time = time.monotonic()
+        # Lagre parametere
+        self.flatness_check_window_sec = flatness_check_window_sec
+        self.flatness_threshold = flatness_threshold
+        self.apnea_duration_threshold_sec = apnea_duration_threshold_sec
+        self.freq_analysis_window_sec = freq_analysis_window_sec
+        self.smoothing_window_freq_sec = smoothing_window_freq_sec
+        self.polynomial_order_freq = polynomial_order_freq
+        self.peak_min_distance_sec = peak_min_distance_sec
+        self.peak_min_prominence = peak_min_prominence
+        self.max_reasonable_freq_hz = max_reasonable_freq_hz
 
-        # 1. Les sensor
+        # Beregn bufferstørrelser
+        self._calculate_buffer_sizes()
+
+        # Initialiser I2C og Sensor
+        self.sensor = None
         try:
-            range_mm = sensor.range
-            status = sensor.range_status
+            # Standard I2C-pinner for RPi via Blinka
+            i2c = busio.I2C(board.SCL, board.SDA)
+            self.sensor = adafruit_vl6180x.VL6180X(i2c)
+            print("VL6180X sensor initialisert.")
         except Exception as e:
-            print(f"Feil ved lesing: {e}. Hopper over.")
-            time.sleep(1.0 / TARGET_FS if TARGET_FS > 0 else 0.1)
-            continue
+            print(f"KRITISK FEIL: Kunne ikke initialisere I2C eller sensor: {e}")
+            print("Fortsetter uten sensor. update() vil returnere feil.")
 
-        # --- Behandle KUN gyldige målinger ---
-        if status == adafruit_vl6180x.ERROR_NONE:
-            current_time = time.monotonic()
+        # Initialiser databuffere
+        self.data_buffer_stddev = deque(maxlen=self.flatness_check_window_points)
+        self.flat_state_buffer = deque(maxlen=self.min_apnea_points)
+        self.freq_analysis_buffer = deque(maxlen=self.freq_analysis_window_points)
 
-            # 2. Oppdater buffere (begge får samme data)
-            data_buffer_stddev.append(range_mm)
-            freq_analysis_buffer.append(range_mm)
+        # Initialiser tilstandsvariabler
+        self.apnea_active = False
+        self.last_valid_bpm = None
 
-            # === Pustestopp Deteksjon (Uavhengig) ===
+        print("Initialisering fullført.")
+
+    def _calculate_buffer_sizes(self):
+        """Beregner interne bufferstørrelser basert på parametere."""
+        # Pustestopp
+        self.flatness_check_window_points = round(self.flatness_check_window_sec * self.target_fs)
+        if self.flatness_check_window_points < 2: self.flatness_check_window_points = 2
+        self.min_apnea_points = round(self.apnea_duration_threshold_sec * self.target_fs)
+        if self.min_apnea_points < 1: self.min_apnea_points = 1
+
+        # Frekvens
+        self.freq_analysis_window_points = round(self.freq_analysis_window_sec * self.target_fs)
+        if self.freq_analysis_window_points < 5: self.freq_analysis_window_points = 5
+        self.smoothing_window_freq_points = round(self.smoothing_window_freq_sec * self.target_fs)
+        if self.smoothing_window_freq_points < 3: self.smoothing_window_freq_points = 3
+        if self.smoothing_window_freq_points % 2 == 0: self.smoothing_window_freq_points += 1
+        self.peak_min_distance_points = round(self.peak_min_distance_sec * self.target_fs)
+        if self.peak_min_distance_points < 1: self.peak_min_distance_points = 1
+
+    def _calculate_frequency(self) -> float | None:
+        """
+        Intern hjelpemetode for å beregne frekvens fra freq_analysis_buffer.
+        Returnerer beregnet BPM eller None hvis ingen gyldig frekvens ble funnet.
+        """
+        if len(self.freq_analysis_buffer) != self.freq_analysis_buffer.maxlen:
+            return None
+
+        signal_chunk = np.array(self.freq_analysis_buffer)
+        smoothed_chunk = []
+        if len(signal_chunk) >= self.smoothing_window_freq_points:
+             try:
+                 smoothed_chunk = savgol_filter(signal_chunk, self.smoothing_window_freq_points, self.polynomial_order_freq)
+             except ValueError: smoothed_chunk = signal_chunk
+        else: smoothed_chunk = signal_chunk
+
+        peaks_indices_in_chunk = []
+        try:
+            peaks_indices, _ = find_peaks(smoothed_chunk, distance=self.peak_min_distance_points, prominence=self.peak_min_prominence)
+            if len(peaks_indices) >= 2: peaks_indices_in_chunk = peaks_indices
+        except Exception: peaks_indices_in_chunk = []
+
+        if len(peaks_indices_in_chunk) >= 2:
+            periods_samples = np.diff(peaks_indices_in_chunk)
+            periods_sec = periods_samples / self.target_fs
+            valid_period_mask = periods_sec > 1e-6
+            periods_sec = periods_sec[valid_period_mask]
+
+            if len(periods_sec) > 0:
+                instant_frequencies_hz = 1.0 / periods_sec
+                valid_freq_mask = instant_frequencies_hz <= self.max_reasonable_freq_hz
+                valid_frequencies_hz = instant_frequencies_hz[valid_freq_mask]
+
+                if len(valid_frequencies_hz) > 0:
+                    mean_freq_hz = np.mean(valid_frequencies_hz)
+                    current_window_bpm = mean_freq_hz * 60
+                    return current_window_bpm
+        return None
+
+    def update(self) -> dict:
+        """
+        Leser en ny verdi fra sensoren, oppdaterer interne buffere og tilstander,
+        og returnerer en status-ordbok.
+        """
+        if self.sensor is None:
+             return {
+                'range_mm': -1, 'status_code': -99, 'status_ok': False,
+                'status_text': "Sensor ikke initialisert", 'apnea_active': self.apnea_active,
+                'apnea_started': False, 'apnea_stopped': False,
+                'frequency_bpm': self.last_valid_bpm
+            }
+
+        range_mm = -1
+        status = -1
+        status_text = "Ukjent feil"
+        try:
+            range_mm = self.sensor.range
+            status = self.sensor.range_status
+            status_text = adafruit_vl6180x.RANGE_STATUS.get(status, f"Ukjent ({status})")
+        except Exception as e:
+            status = -100
+            status_text = f"Sensorlesefeil: {e}"
+
+        status_ok = (status == adafruit_vl6180x.ERROR_NONE)
+        apnea_started_now = False
+        apnea_stopped_now = False
+
+        if status_ok:
+            self.data_buffer_stddev.append(range_mm)
+            self.freq_analysis_buffer.append(range_mm)
+
+            # Pustestopp Deteksjon
             is_currently_flat = False
-            if len(data_buffer_stddev) == data_buffer_stddev.maxlen:
-                std_dev = np.std(data_buffer_stddev)
-                is_currently_flat = std_dev < FLATNESS_THRESHOLD
-            flat_state_buffer.append(is_currently_flat)
+            if len(self.data_buffer_stddev) == self.data_buffer_stddev.maxlen:
+                std_dev = np.std(self.data_buffer_stddev)
+                is_currently_flat = std_dev < self.flatness_threshold
+            self.flat_state_buffer.append(is_currently_flat)
 
             apnea_detected_now = False
-            if len(flat_state_buffer) == flat_state_buffer.maxlen:
-                if all(flat_state_buffer):
-                    apnea_detected_now = True
+            if len(self.flat_state_buffer) == self.flat_state_buffer.maxlen:
+                if all(self.flat_state_buffer): apnea_detected_now = True
 
-            # Sjekk om pustestopp-status har endret seg
-            if apnea_detected_now and not apnea_active:
-                print(f"{time.strftime('%H:%M:%S')}: +++ PUSTESTOPP STARTET (Stabil > {APNEA_DURATION_THRESHOLD_SEC:.1f} s) +++")
-                apnea_active = True
-                last_apnea_print_time = current_time # Oppdater tid for statusutskrift
-            elif not apnea_detected_now and apnea_active:
-                print(f"{time.strftime('%H:%M:%S')}: --- PUSTESTOPP AVSLUTTET ---")
-                apnea_active = False
-                last_apnea_print_time = current_time # Oppdater tid for statusutskrift
+            if apnea_detected_now and not self.apnea_active:
+                apnea_started_now = True
+                self.apnea_active = True
+            elif not apnea_detected_now and self.apnea_active:
+                apnea_stopped_now = True
+                self.apnea_active = False
+
+            # Frekvensanalyse
+            calculated_bpm = self._calculate_frequency()
+            if calculated_bpm is not None:
+                self.last_valid_bpm = calculated_bpm
+
+        # Returner status
+        return {
+            'range_mm': range_mm, 'status_code': status, 'status_ok': status_ok,
+            'status_text': status_text, 'apnea_active': self.apnea_active,
+            'apnea_started': apnea_started_now, 'apnea_stopped': apnea_stopped_now,
+            'frequency_bpm': self.last_valid_bpm
+        }
+
+# --- Funksjon for Hovedlogikk ---
+def kjør_sanntidsanalyse(params: dict):
+    """
+    Initialiserer analysatoren og kjører hovedløkken for sanntidsanalyse.
+
+    Args:
+        params: En ordbok med parametere for VL6180XAnalyser.
+    """
+    print("Starter hovedprogram...")
+    try:
+        analysator = VL6180XAnalyser(**params)
+    except Exception as init_e:
+        print(f"Kunne ikke opprette VL6180XAnalyser: {init_e}")
+        return # Avslutt funksjonen hvis initialisering feiler
+
+    if analysator.sensor is None:
+        print("Avslutter siden sensor ikke kunne initialiseres.")
+        return # Avslutt funksjonen
+
+    last_status_print_time = 0.0
+    print_interval_sec = 5.0 # Intervall for periodisk statusutskrift
+
+    print("\nStarter sanntidsanalyse (Trykk Ctrl+C for å avslutte)...")
+    try:
+        while True:
+            loop_start_time = time.monotonic()
+
+            # Kall update-metoden
+            status_resultat = analysator.update()
+            current_time = time.monotonic()
+
+            # Håndter sensorfeil
+            if not status_resultat['status_ok']:
+                if current_time - last_status_print_time > print_interval_sec:
+                    print(f"{time.strftime('%H:%M:%S')}: Sensorfeil - {status_resultat['status_text']}")
+                    last_status_print_time = current_time
+                # Ikke gå videre med statusutskrift ved feil, men fortsett løkken
+
+            else:
+                # Skriv ut ved endringer i pustestopp-status
+                if status_resultat['apnea_started']:
+                    print(f"{time.strftime('%H:%M:%S')}: +++ PUSTESTOPP STARTET +++")
+                    last_status_print_time = current_time
+                elif status_resultat['apnea_stopped']:
+                    print(f"{time.strftime('%H:%M:%S')}: --- PUSTESTOPP AVSLUTTET ---")
+                    last_status_print_time = current_time
+
+                # Periodisk utskrift av generell status
+                if current_time - last_status_print_time > print_interval_sec:
+                    apnea_status_str = "AKTIV" if status_resultat['apnea_active'] else "INAKTIV"
+                    freq_str = f"{status_resultat['frequency_bpm']:.1f} BPM" if status_resultat['frequency_bpm'] is not None else "N/A"
+                    # Viser også siste gyldige range-måling for kontekst
+                    range_str = f"{status_resultat['range_mm']}mm" if status_resultat['range_mm'] != -1 else "Ukjent"
+                    print(f"{time.strftime('%H:%M:%S')} | Pustestopp: {apnea_status_str} | Frekvens: {freq_str} | Range: {range_str}")
+                    last_status_print_time = current_time
+
+            # Kontroller løkkehastighet
+            loop_end_time = time.monotonic()
+            elapsed_time = loop_end_time - loop_start_time
+            # Bruk target_fs fra det opprettede analysator-objektet
+            sleep_time = (1.0 / analysator.target_fs) - elapsed_time
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+
+    except KeyboardInterrupt:
+        print("\nAvslutter program...")
+    finally:
+        print("Analysefunksjon avsluttet.")
 
 
-            # === Frekvensanalyse (Uavhengig) ===
-            if len(freq_analysis_buffer) == freq_analysis_buffer.maxlen:
-                signal_chunk = np.array(freq_analysis_buffer)
-                # Smoothing
-                smoothed_chunk = []
-                if len(signal_chunk) >= smoothing_window_freq_points:
-                     try:
-                         smoothed_chunk = savgol_filter(signal_chunk, smoothing_window_freq_points, POLYNOMIAL_ORDER_FREQ)
-                     except ValueError: smoothed_chunk = signal_chunk
-                else: smoothed_chunk = signal_chunk
+# --- Hovedinngangspunkt ---
+if __name__ == "__main__":
+    # Definer parametere som en ordbok (dictionary)
+    analyse_parametere = {
+        "target_fs": 10.0,
+        "flatness_check_window_sec": 2.0,
+        "flatness_threshold": 2.0,
+        "apnea_duration_threshold_sec": 2.0,
+        "freq_analysis_window_sec": 10.0,
+        "smoothing_window_freq_sec": 0.7,
+        "polynomial_order_freq": 3,
+        "peak_min_distance_sec": 0.5,
+        "peak_min_prominence": 5.0,
+        "max_reasonable_freq_hz": 5.0
+    }
 
-                # Finn topper
-                peaks_indices_in_chunk = []
-                try:
-                    peaks_indices, _ = find_peaks(smoothed_chunk, distance=peak_min_distance_points, prominence=PEAK_MIN_PROMINENCE)
-                    if len(peaks_indices) >= 2: # Trenger minst 2 topper for frekvens
-                        peaks_indices_in_chunk = peaks_indices
-                except Exception: peaks_indices_in_chunk = []
+    # Kall hovedfunksjonen med parameterne
+    kjør_sanntidsanalyse(analyse_parametere)
 
-                # Beregn frekvens hvis nok topper ble funnet
-                if len(peaks_indices_in_chunk) >= 2:
-                    periods_samples = np.diff(peaks_indices_in_chunk)
-                    periods_sec = periods_samples / TARGET_FS
-                    valid_period_mask = periods_sec > 1e-6
-                    periods_sec = periods_sec[valid_period_mask]
-
-                    if len(periods_sec) > 0:
-                        instant_frequencies_hz = 1.0 / periods_sec
-                        valid_freq_mask = instant_frequencies_hz <= MAX_REASONABLE_FREQ_HZ
-                        valid_frequencies_hz = instant_frequencies_hz[valid_freq_mask]
-
-                        if len(valid_frequencies_hz) > 0:
-                            mean_freq_hz = np.mean(valid_frequencies_hz)
-                            current_window_bpm = mean_freq_hz * 60
-                            last_valid_bpm = current_window_bpm # Oppdater alltid med siste gyldige
-                        # else: Hvis ingen gyldige frekv., behold forrige last_valid_bpm
-                    # else: Hvis ingen gyldige perioder, behold forrige last_valid_bpm
-                # else: Hvis færre enn 2 topper, behold forrige last_valid_bpm
-
-
-            # === Periodisk Utskrift ===
-            # Skriv ut pustestopp-status hvert 5. sekund
-            if current_time - last_apnea_print_time > 5.0:
-                status_str = "INAKTIV" if apnea_active else "AKTIV"
-                print(f"{time.strftime('%H:%M:%S')}: Pust: {status_str}")
-                last_apnea_print_time = current_time
-
-            # Skriv ut frekvens hvert 5. sekund (uavhengig av pustestopp)
-            if current_time - last_freq_print_time > 5.0:
-                freq_str = f"{last_valid_bpm:.1f} BPM" if last_valid_bpm is not None else "Beregner/Ingen"
-                print(f"{time.strftime('%H:%M:%S')}: Frekvens: {freq_str}")
-                last_freq_print_time = current_time
-
-
-        # --- Håndter ugyldige målinger ---
-        else:
-             error_string = adafruit_vl6180x.RANGE_STATUS.get(status, f"Ukjent ({status})")
-             current_time = time.monotonic()
-             # Skriv kun feilmelding hvis det er lenge siden sist utskrift
-             if current_time - max(last_apnea_print_time, last_freq_print_time) > 5.0:
-                 print(f"{time.strftime('%H:%M:%S')}: Ugyldig måling (Status: {error_string})")
-                 # Oppdater begge tidspunkter for å unngå umiddelbar ny utskrift
-                 last_apnea_print_time = current_time
-                 last_freq_print_time = current_time
-
-
-        # --- Kontroller løkkehastighet ---
-        loop_end_time = time.monotonic()
-        elapsed_time = loop_end_time - loop_start_time
-        sleep_time = (1.0 / TARGET_FS) - elapsed_time
-        if sleep_time > 0:
-            time.sleep(sleep_time)
-
-except KeyboardInterrupt:
-    print("\nAvslutter program...")
-finally:
-    print("Program avsluttet.")
+    print("Hovedprogram ferdig.")
