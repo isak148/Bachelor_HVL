@@ -24,25 +24,19 @@ class AnalyseVL6180X:
 
     def read_sensor(self):
         # Leser av verdien til sensoren og sender det til get_data
-        try:
+
             distance = self.sensor.range
             read_time = time.monotonic() # Get the current time
             return distance, read_time # Return both distance and time
-        except Exception as e:
-            print(f"Kunne ikke lese sensor data: {e}")
-            return None
-
-    def get_data(self):
         # Henter data fra sensor og lagrer det i en liste
         # Dataen lagres og ser etter topper som videre blir sendt videre til frekvens_bergning for å se på tiden mellom toppene.
-        distance = self.read_sensor()
-        if distance is not None:
-            self.data_buffer.append(distance) 
+        
+    def get_data(self):
         result = self.read_sensor()
         if result is not None:
-            distance, read_time = result # Unpack the result
+            distance, read_time = result  # Unpack the tuple
             self.data_buffer.append(distance)
-            self.last_read_times.append(read_time) # Append the timestamp
+            self.last_read_times.append(read_time)
 
     def pustestopp(self):
         # Sjekker etter stabilitet i dataen som indikerer at brukeren holder pusten
