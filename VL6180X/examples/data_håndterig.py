@@ -24,7 +24,7 @@ import adafruit_vl6180x
 TARGET_FS = 10  # Ønsket antall målinger per sekund (Hz)
 
 # Pustestopp-deteksjon
-FLATNESS_CHECK_WINDOW_SEC = 2.0 # Vindu for std dev (s)
+FLATNESS_CHECK_WINDOW_SEC = 2# Vindu for std dev (s)
 FLATNESS_THRESHOLD = 2.0      # Maks std dev for "stabil" (mm?)
 APNEA_DURATION_THRESHOLD_SEC = 5.0 # Min varighet for pustestopp (s)
 
