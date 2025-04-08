@@ -5,6 +5,7 @@ import numpy as np
 from collections import deque
 import adafruit_vl6180x
 from scipy.signal import find_peaks, savgol_filter
+from collections import deque  # Import deque if not already imported
 
 
 class AnalyseVL6180X:
@@ -54,31 +55,33 @@ class AnalyseVL6180X:
         return True  # Alle verdier innenfor terskel, stabilt
 
     def frekvens_bergening(self):
-        # Beregner frekvensen på pustingen til brukeren over en lengere periode på ca. 10 sek
-        # Skal sende ut verdien selv om det er en pustestopp eller ikke, men frekvensen vil gå ned så lenge
-        # brukeren holder pusten siden det ikke vil være noen topper i dataen.
-        # Toppene får verdien fra get_data og finner toppene i dataen og lagrer dem i en liste
-        # Finner tiden mellom toppene og regner ut frekvensen fra dei
-        if len(self.data_buffer) < self.buffer_size:
-            return None  # Ikke nok data til å beregne frekvens
+        # Beregner frekvensen på pustingen.
+        # Beregner frekvensen så fort det er 2 topper.
+        # Bruker et sliding window for å kun se på de n siste toppene
+        if len(self.data_buffer) < 2:
+            return 0  # Trenger minst 2 datapunkter
+        
 
         data_array = np.array(self.data_buffer)
-        peaks, properties = find_peaks(data_array, prominence=10)  # Add prominence threshold
+        peaks, properties = find_peaks(data_array, prominence=10)
+        
 
         if len(peaks) < 2:
-            return 0  # Kan ikke beregne frekvens med mindre enn 2 topper
+            return 0  # Trenger minst 2 topper
+        
 
-        peak_times = [i * (1 / 10) for i in peaks]  # estimerer tid basert på bufferposisjoner (10hz)
-        time_diffs = np.diff(peak_times)
-        if len(time_diffs) > 0:
-            mean_time_diff = np.mean(time_diffs)
-            if mean_time_diff > 0:
-              frequency = 60 / mean_time_diff
-              return frequency
-            else:
-              return 0
+        # Bruk de to siste toppene for å beregne frekvens
+        if len(peaks) >= 2:
+            peak_times = [self.last_read_times[i] for i in peaks[-2:] if i < len(self.last_read_times)]
+            time_diffs = np.diff(peak_times)
+            if time_diffs:
+                mean_time_diff = np.mean(time_diffs)
+                if mean_time_diff > 0:
+                    frequency = 60 / mean_time_diff
+            return frequency
         else:
             return 0
+        return 0
 
     def gi_status(self):
         # Gir ut infoen fra pustestopp og frekvensberging
