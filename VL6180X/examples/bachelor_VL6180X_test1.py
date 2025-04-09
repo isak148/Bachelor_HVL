@@ -42,6 +42,7 @@ class VL6180XAnalyser:
          self.sample_rate = 20  # Hz (Samples per sekund)
          # Samme vindusstørrelse brukes for både akselerometer og gyro analyse
          self.window_size = 20 # 2 sekunds vindu (50 samples)
+         self.window_size_pust = 160
 
             # Buffere for rådata (magnitude)
          self.raw_accel_buffer = deque(maxlen=self.window_size)
@@ -52,6 +53,9 @@ class VL6180XAnalyser:
          self.last_computed_accel_status = "Initialiserer..."
 
          self.svar = "initialiserer"
+
+         self.last_range_data = 0
+         self.pust = 0.0
 
     def vurder_stabilitet_G(self, tot_G_values, toleranse=5):
             """
@@ -81,12 +85,48 @@ class VL6180XAnalyser:
             return self.svar 
 
 
+
+    def tell_signalskifter(data):
+        count = 0
+        current_sign = None
+        streak = 0
+        ready_for_switch = False
+
+        for value in data:
+            # Nullverdier hopper vi over uten å påvirke streaken
+            if value == 0:
+                continue
+
+            sign = 1 if value > 0 else -1
+
+            if sign == current_sign:
+                streak += 1
+            else:
+                if streak >= 10:
+                    ready_for_switch = True
+                else:
+                    ready_for_switch = False
+
+                if ready_for_switch and sign != current_sign:
+                    count += 1
+                    ready_for_switch = False
+                    streak = 1  # start ny streak
+                else:
+                    streak = 1
+
+            current_sign = sign
+
+        return count
+
+
     def analyserer_stopp(self):
 
         Range_data = self.sensor.range
 
         self.raw_accel_buffer.append(Range_data)
-        
+        self.raw_gyro_buffer.append(Range_data - self.last_range_data)
+
+        self.last_range_data = Range_data
 
         status_fra_G = self.last_computed_accel_status
     
@@ -97,11 +137,17 @@ class VL6180XAnalyser:
             
 
             self.raw_accel_buffer.clear()
-    
+
+        if len(self.raw_gyro_buffer) == self.window_size_pust:
+            count  = self.tell_signalskifter(list(self.raw_gyro_buffer))
+
+            self.pust = (count/8) * 60
+            self.raw_gyro_buffer.clear()
             
 
         return {        
             'aks_status': status_fra_G,
+            'pust_frekvens': self.pust
         }
     
 
@@ -110,7 +156,8 @@ if __name__ == "__main__":
 
     while(True):
         status =sensor.analyserer_stopp()
-        print(status)
+        print(status['aks_status'])
+        print(status['pust_frekvens'])
         time.sleep(0.05)
 
     
