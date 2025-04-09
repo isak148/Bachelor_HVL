@@ -38,9 +38,6 @@ class VL6180XAnalyser:
             print(f"KRITISK FEIL: Kunne ikke initialisere I2C eller sensor: {e}")
             print("Fortsetter uten sensor. update() vil returnere feil.")
 
-         # Felles variabler for statusvurdering
-         self.sample_rate = 20  # Hz (Samples per sekund)
-         # Samme vindusstørrelse brukes for både akselerometer og gyro analyse
          self.window_size = 20 # 2 sekunds vindu (50 samples)
 
             # Buffere for rådata (magnitude)
