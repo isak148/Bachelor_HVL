@@ -1,11 +1,11 @@
 from mpu6050_1.mpu6050_2.bachelor_test2 import MPU6050_Orientation
-
+from ms5837 import Bachelor_test1_MS5837 as Trykksensor
 
 class status: 
 
     def __init__(self):
         self.variabler = {} 
-        
+        self.trykk_sensor = Trykksensor.analyse_MS5837() 
 
     
     def get_data_aks(self):
@@ -15,8 +15,8 @@ class status:
         return {"aks": self.data_aks}
     
     def get_data_LFR_Preasure(self):
-         self.data_LFR =
-         self.data_preasure=
+         self.data_LFR = 
+         self.data_preasure = self.trykk_sensor.read_sensor_data() 
         return {      
             "LFR": self.data_LFR,   
             "pressure": self.data_pressure
