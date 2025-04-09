@@ -30,7 +30,7 @@ try:
         if value > THRESHOLD and last_value <= THRESHOLD:
             if last_peak_time is None:
                 last_peak_time = now
-                print("📍 Første topp registrert")
+                print("Første topp registrert")
             else:
                 rr_interval = now - last_peak_time
                 if rr_interval > DEBOUNCE_TIME:
@@ -40,7 +40,7 @@ try:
                         bpm_history.pop(0)
 
                     median_bpm = statistics.median(bpm_history)
-                    print(f"✅ Puls (median av siste {len(bpm_history)}): {median_bpm:.1f} BPM")
+                    print(f"Puls (median av siste {len(bpm_history)}): {median_bpm:.1f} BPM")
 
                     last_peak_time = now
 

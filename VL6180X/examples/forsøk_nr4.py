@@ -34,22 +34,22 @@ class AnalyseVL6180X:
     
 
     def pustestopp(self):
-        if len(self.data_buffer) < self.buffer_size:
-            return False
-    
+        # Sjekker etter stabilitet i dataen som indikerer at brukeren holder pusten
+        # Sjekker etter stabilitet: ingen endring i avstanden +- threshold i mer enn 2 sek
 
-        data_window = list(self.data_buffer)[-int(2 * 10):] # Get last 2 seconds of data (assuming 10Hz)
+        if len(self.data_buffer) < self.buffer_size:
+            return False  # Ikke nok data til å vurdere stabilitet
+
+        data_window = list(self.data_buffer)[-int(self.apnea_duration * 10):]  # Get last 2 seconds of data (assuming 10Hz)
         if not data_window:
-            return False # Ingen data å sjekke
-    
+            return False  # Ingen data å sjekke
 
         first_value = data_window[0]
         for value in data_window:
-            if not (first_value - 2 <= value <= first_value + 2):
-                return False # Verdi utenfor terskel, ikke stabilt
-    
+            if not (first_value - self.apnea_threshold <= value <= first_value + self.apnea_threshold):
+                return False  # Verdi utenfor terskel, ikke stabilt
 
-            return True # Alle verdier innenfor terskel, stabilt
+        return True  # Alle verdier innenfor terskel, stabilt
     
 
     def frekvens_bergening(self):
