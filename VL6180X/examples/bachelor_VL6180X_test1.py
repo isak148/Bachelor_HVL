@@ -43,7 +43,7 @@ class VL6180XAnalyser:
 
             # Buffere for rådata (magnitude)
          self.raw_accel_buffer = deque(maxlen=self.window_size)
-         self.raw_gyro_buffer = deque(maxlen=self.window_size)
+         self.raw_gyro_buffer = deque(maxlen=self.window_size_pust)
 
          # Variabler for Akselerometer (G) stabilitetsvurdering
          self.accel_stabilitet_historikk = []
@@ -83,7 +83,7 @@ class VL6180XAnalyser:
 
 
 
-    def tell_signalskifter(data):
+    def tell_signalskifter(self, data):
         count = 0
         current_sign = None
         streak = 0
@@ -121,7 +121,8 @@ class VL6180XAnalyser:
         Range_data = self.sensor.range
 
         self.raw_accel_buffer.append(Range_data)
-        self.raw_gyro_buffer.append(Range_data - self.last_range_data)
+        Range_data_pust = Range_data - self.last_range_data
+        self.raw_gyro_buffer.append(Range_data_pust)
 
         self.last_range_data = Range_data
 
