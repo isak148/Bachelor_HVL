@@ -99,7 +99,7 @@ class VL6180XAnalyser:
             if sign == current_sign:
                 streak += 1
             else:
-                if streak >= 10:
+                if streak >= 5:
                     ready_for_switch = True
                 else:
                     ready_for_switch = False
@@ -139,7 +139,7 @@ class VL6180XAnalyser:
         if len(self.raw_gyro_buffer) == self.window_size_pust:
             count  = self.tell_signalskifter(list(self.raw_gyro_buffer))
 
-            self.pust = (count/8) * 60
+            self.pust = (count/8/2) * 60
             self.raw_gyro_buffer.clear()
             
 
