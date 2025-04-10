@@ -19,30 +19,38 @@ class Status:
         self.data_LFR = {}
         self.data_pulse = {}
         self.data_pressure = {}
+        self.oppstart = False
     
-
-    
+    def threding_start(self,verdi):
+        if(verdi == True):
+            self.oppstart = True
+        else:
+            self.oppstart = False
+        
     def get_data_aks(self):
         # Denne skal retunere: 'total_G': tot_G, 'is_periodic': last_periodicity_status,'retning' : retning
-        self.data_aks = self.aks_sensor.oppdater_og_vurder_status()
+        while(self.oppstart):
+            self.data_aks = self.aks_sensor.oppdater_og_vurder_status()
         
-        return {"aks": self.data_aks}
+            return {"aks": self.data_aks}
     
     def get_data_LFR_Preasure(self):
-         self.data_LFR = self.LFR_sensor.analyserer_stopp()
-         self.data_preasure = self.trykk_sensor.read_sensor_data() 
-        
-         return {      
-            "LFR": self.data_LFR,
-            "pressure": self.data_pressure
-            }
+        while(self.oppstart):
+            self.data_LFR = self.LFR_sensor.analyserer_stopp()
+            self.data_preasure = self.trykk_sensor.read_sensor_data() 
+            
+            return {      
+                "LFR": self.data_LFR,
+                "pressure": self.data_pressure
+                }
 
     def get_data_pulse(self):
-        self.data_pulse = self.puls_sensor  # her må man få inn en klasse som retunerer noe brukende
-        
-        return {
-            "pulse": self.data_pulse    
-            }
+        while(self.oppstart):
+            self.data_pulse = self.puls_sensor  # her må man få inn en klasse som retunerer noe brukende
+            
+            return {
+                "pulse": self.data_pulse    
+                }
 
 
     def Svømmer(self):
@@ -128,6 +136,10 @@ if __name__ == "__main__":
             data_LFR_Trykk.join()
             data_puls.join()
             aktivering.join()
+        else:
+            Status.threding_start(False)
+            
+            
 
        
         while(ivann_aktiv):
@@ -155,7 +167,8 @@ if __name__ == "__main__":
                         print("Drukner")
                 else:
                         print("Uvisst status")
-            ivann_aktiv = Status.aktivert() # Denne må være i hovedprogrammet og bestemme om svømmeren er i vann eller ikke.:
+            ivann_aktiv = Status.aktivert() # Denne må være i hovedprogrammet og bestemme om svømmeren er i vann eller ikke.
+           
         
         
 
