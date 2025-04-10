@@ -17,8 +17,8 @@ class Status:
         self.ivann = False
         self.data_aks = {}
         self.data_LFR = {}
-        self.data_pulse = {}
-        self.data_pressure = {}
+        self.data_pulse = {} # {'puls': median_bpm "float",   'puls_status': self.puls_status "bool"}
+        self.data_pressure = {} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool"} 
         self.oppstart = False
     
     def threding_start(self,verdi):

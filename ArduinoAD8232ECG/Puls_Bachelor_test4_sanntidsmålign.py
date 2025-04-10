@@ -16,6 +16,7 @@ class AnalyseAD8232:
         self.last_peak_time = None
         self.last_value = 0
         self.bpm_history = []
+        self.puls_status = None
 
     def read_sensor(self):
         # Leser av verdien fra ADC-kanalen
@@ -43,9 +44,18 @@ class AnalyseAD8232:
                         print(f"Puls (median av siste {len(self.bpm_history)}): {median_bpm:.1f} BPM")
 
                         last_peak_time = now
+                
+            if (median_bpm <= 100):
+                self.puls_status = "lav"
+            elif (100 > median_bpm > 150):
+                self.puls_status = "middel"
+            else:
+                self.puls_status = "høy"
 
             last_value = value
+            time.sleep(0.01)
 
-            return {'puls': median_bpm}
+            return {'puls': median_bpm,
+                    'puls_status': self.puls_status}
 
    
