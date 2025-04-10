@@ -1,7 +1,7 @@
-from mpu6050_1.mpu6050_2 import bachelor_test4 as Akssensor
+from mpu6050_1.mpu6050_2 import bachelor_akselrasjon_sensor as Akssensor
 from ms5837 import Bachelor_test1_MS5837 as Trykksensor
-from ArduinoAD8232ECG import Puls_Bachelor_test4_sanntidsmålign as pulssensor
-from VL6180X.examples import bachelor_VL6180X_test1 as pustesensor 
+from ArduinoAD8232ECG import Bachelor_Pulsmåling as pulssensor
+from VL6180X.examples import bachelor_pustesenor as pustesensor 
 
 
 class status: 
