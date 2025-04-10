@@ -122,6 +122,7 @@ if __name__ == "__main__":
         ivann_aktiv =Status.aktivert() # Denne må være i hovedprogrammet og bestemme om svømmeren er i vann eller ikke.:
        
         if ivann_aktiv == True:
+            Status.threding_start(True)
             data_aks = threading.Thread(target=Status.get_data_aks)
             data_LFR_Trykk = threading.Thread(target=Status.get_data_LFR_Preasure)
             data_puls = threading.Thread(target=Status.get_data_pulse)
