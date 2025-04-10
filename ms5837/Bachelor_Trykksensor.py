@@ -48,7 +48,9 @@ class analyse_MS5837:
                         exit(1)
                 
                 if (Trykk > 1025.6): # 1cm under vannoverflate = 0.981mbar: tilsvarer nå 2cm
-                        Ivann = True  
+                        Ivann = True
+                else:
+                        Ivann = False
 
                 return   {'status' : self.status_endring,
                          'Trykk': Trykk,
