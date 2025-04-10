@@ -4,6 +4,7 @@ import board
 import busio
 import adafruit_ads1x15.ads1015 as ADS1015
 import adafruit_ads1x15.analog_in as AnalogIn
+
 class AnalyseAD8232:
     def __init__(self):
         # Initialiserer I2C og ADC
