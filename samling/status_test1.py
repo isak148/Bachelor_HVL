@@ -1,10 +1,12 @@
 from mpu6050_1.mpu6050_2 import bachelor_akselrasjon_sensor as Akssensor
-from ms5837 import Bachelor_test1_MS5837 as Trykksensor
+from ms5837 import Bachelor_Trykksensor as Trykksensor
 from ArduinoAD8232ECG import Bachelor_Pulsmåling as pulssensor
 from VL6180X.examples import bachelor_pustesenor as pustesensor 
+import threading
+import time
 
 
-class status: 
+class Status: 
 
     def __init__(self):
         self.variabler = {} 
@@ -12,6 +14,12 @@ class status:
         self.puls_sensor = pulssensor()
         self.aks_sensor = Akssensor.MPU6050_Orientation()
         self.LFR_sensor = pustesensor.VL6180XAnalyser()
+        self.ivann = False
+        self.data_aks = {}
+        self.data_LFR = {}
+        self.data_pulse = {}
+        self.data_pressure = {}
+    
 
     
     def get_data_aks(self):
@@ -25,12 +33,12 @@ class status:
          self.data_preasure = self.trykk_sensor.read_sensor_data() 
         
          return {      
-            "LFR": self.data_LFR
+            "LFR": self.data_LFR,
             "pressure": self.data_pressure
             }
 
     def get_data_pulse(self):
-        self.data_pulse = self.puls_sensor.  # her må man få inn en klasse som retunerer noe brukende
+        self.data_pulse = self.puls_sensor  # her må man få inn en klasse som retunerer noe brukende
         
         return {
             "pulse": self.data_pulse    
@@ -40,6 +48,15 @@ class status:
     def Svømmer(self, aks, lfr_preasure, pulse):
         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
+        '''
+        if noe == True:
+            return det = True
+        else:
+            return det = False
+
+        return det
+
+        '''
         pass
 
     def Flyter(self, aks, lfr_preasure, pulse):
@@ -62,60 +79,90 @@ class status:
         # True eller false 
         pass 
 
-    def aktivert(selft):
+    def aktivert(self):
         # Denne skal bestemme om svømmeren er i vann og aktivere status analyse.
-        pass 
+        if self.trykk_sensor.read_sensor_data()['I_vann'] == True:
+            self.ivann = True
+            count = 0
+        elif self.trykk_sensor.read_sensor_data()['I_vann'] == False:
+            count=+1
+            if count > 10:
+                self.ivann = False
+                count = 0
+            else:
+                 self.ivann = True
+        
+        return self.ivann 
+        
 
 if __name__ == "__main__":
-   
-   while(True):
-       ivann = aktivert() 
-
-       while(ivann):
-            data_aks = thread get data_aks
-            data_LFR_Preasure = thread get data
-            data_puls = thread get_data 
-           
-
-            if (True): # Denne må være tidsstyrt hvor ofte vi ønsker og oppdatere status, kanskje 1 gang i sekundet?
-                if (Flyter()):
-                        printline("Flyter")
-                
-                elif(Svømmer()):
-                        printline("Svømmer")
-
-                elif(Dykker()):
-                        printline("Dykker")
-                
-                elif(Svømmer_opp()):
-                        printline("Svømmer_opp")
-                
-                elif(Drukner()):
-                        printline("Drukner")
-                else:
-                        printline("Uvisst status")
+    while True:
+        ivann_aktiv =Status.aktivert() # Denne må være i hovedprogrammet og bestemme om svømmeren er i vann eller ikke.:
+       
+        if ivann_aktiv == True:
+            data_aks = threading.Thread(target=Status.get_data_aks)
+            data_LFR_Trykk = threading.Thread(target=Status.get_data_LFR_Preasure)
+            data_puls = threading.Thread(target=Status.get_data_pulse)
+            aktivering = threading.Thread(target=Status.aktivert)
             
-            ivann = aktivert() # Deaktiverer status oppdatering og programm program kall 
+            data_aks.start()
+            data_LFR_Trykk.start()
+            data_puls.start()
+            aktivering.start()
 
-            
+            data_aks.join()
+            data_LFR_Trykk.join()
+            data_puls.join()
+            aktivering.join()
 
        
+        while(ivann_aktiv):
+
+            '''
+            data_aks = Status.get_data_aks()
+            data_LFR_Preasure = Status.get_data_LFR_Preasure()
+            data_puls = Status.get_data_pulse()
+            '''
+
+            if (True): # Denne må være tidsstyrt hvor ofte vi ønsker og oppdatere status, kanskje 1 gang i sekundet?
+                if (Status.Flyter()):
+                        print("Flyter")
+                
+                elif(Status.Svømmer()):
+                        print("Svømmer")
+
+                elif(Status.Dykker()):
+                        print("Dykker")
+                
+                elif(Status.Svømmer_opp()):
+                        print("Svømmer_opp")
+                
+                elif(Status.Drukner()):
+                        print("Drukner")
+                else:
+                        print("Uvisst status")
+            ivann_aktiv = Status.aktivert() # Denne må være i hovedprogrammet og bestemme om svømmeren er i vann eller ikke.:
+        
         
 
 
-       
-    
-    
-       
+        
+        
 
 
-       
+            
 
 
-   
-   
+            
+
+
+            
 
 
 
-    
+
+
+  
+
+            
 
