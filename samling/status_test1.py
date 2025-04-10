@@ -23,7 +23,7 @@ class Status:
 
     
     def get_data_aks(self):
-       # Denne skal retunere: 'total_G': tot_G, 'is_periodic': last_periodicity_status,'retning' : retning
+        # Denne skal retunere: 'total_G': tot_G, 'is_periodic': last_periodicity_status,'retning' : retning
         self.data_aks = self.aks_sensor.oppdater_og_vurder_status()
         
         return {"aks": self.data_aks}
@@ -45,39 +45,53 @@ class Status:
             }
 
 
-    def Svømmer(self, aks, lfr_preasure, pulse):
+    def Svømmer(self):
         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
-        '''
-        if noe == True:
-            return det = True
+        if self.data_aks == "Normal Aktivitet":
+            status = True
         else:
-            return det = False
+            status = False
+        return status
 
-        return det
-
-        '''
-        pass
-
-    def Flyter(self, aks, lfr_preasure, pulse):
+    def Flyter(self):
          # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
-        pass
+        if self.data_aks == "Stille":
+            status = True
+        else:
+            status = False
+        return status
     
-    def Dykker(self, aks, lfr_preasure, pulse):
+    def Dykker(self):
         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
-        pass
+        if self.data_trykk == "Økende":
+            status = True
+        else:
+            status = False
+        return status
+        
 
-    def Svømmer_opp(self, aks, lfr_preasure, pulse):
+    def Svømmer_opp(self):
          # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
-        pass
+        if self.data_trykk == "Synkende":
+            status = True
+        else:
+            status = False
+        return status
     
-    def Drukner(self, aks, lfr_preasure, pulse):
+    
+    def Drukner(self):
         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false 
-        pass 
+        if self.data_aks == "Høy aktivitet"& self.data_LFR == "Puster ikke":
+            status = True
+        else:
+            status = False
+        return status
+ 
 
     def aktivert(self):
         # Denne skal bestemme om svømmeren er i vann og aktivere status analyse.
