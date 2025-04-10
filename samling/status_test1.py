@@ -1,32 +1,38 @@
-from mpu6050_1.mpu6050_2.bachelor_test2 import MPU6050_Orientation
+from mpu6050_1.mpu6050_2 import bachelor_test4 as Akssensor
 from ms5837 import Bachelor_test1_MS5837 as Trykksensor
+from ArduinoAD8232ECG import Puls_Bachelor_test4_sanntidsmålign as pulssensor
+from VL6180X.examples import bachelor_VL6180X_test1 as pustesensor 
+
 
 class status: 
 
     def __init__(self):
         self.variabler = {} 
-        self.trykk_sensor = Trykksensor.analyse_MS5837() 
+        self.trykk_sensor = Trykksensor.analyse_MS5837()
+        self.puls_sensor = pulssensor()
+        self.aks_sensor = Akssensor.MPU6050_Orientation()
+        self.LFR_sensor = pustesensor.VL6180XAnalyser()
 
     
     def get_data_aks(self):
        # Denne skal retunere: 'total_G': tot_G, 'is_periodic': last_periodicity_status,'retning' : retning
-        self.data_aks = MPU6050_Orientation.gi_status_aks()
+        self.data_aks = self.aks_sensor.oppdater_og_vurder_status()
         
         return {"aks": self.data_aks}
     
     def get_data_LFR_Preasure(self):
-         self.data_LFR = 
+         self.data_LFR = self.LFR_sensor.analyserer_stopp()
          self.data_preasure = self.trykk_sensor.read_sensor_data() 
-        return {      
-            "LFR": self.data_LFR,   
+        
+         return {      
+            "LFR": self.data_LFR
             "pressure": self.data_pressure
             }
 
     def get_data_pulse(self):
-        self.data_pulse
+        self.data_pulse = self.puls_sensor.  # her må man få inn en klasse som retunerer noe brukende
+        
         return {
-             
-
             "pulse": self.data_pulse    
             }
 
