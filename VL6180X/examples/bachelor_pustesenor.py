@@ -42,48 +42,58 @@ class VL6180XAnalyser:
          self.window_size_pust = 160
 
             # Buffere for rådata (magnitude)
-         self.raw_accel_buffer = deque(maxlen=self.window_size)
-         self.raw_gyro_buffer = deque(maxlen=self.window_size_pust)
+         self.raw_puste_buffer = deque(maxlen=self.window_size)
+         self.raw_puste_frekvens_buffer = deque(maxlen=self.window_size_pust)
 
          # Variabler for Akselerometer (G) stabilitetsvurdering
          self.accel_stabilitet_historikk = []
-         self.last_computed_accel_status = "Initialiserer..."
+         self.last_computed_puste_status = "Initialiserer..."
 
          self.svar = "initialiserer"
 
          self.last_range_data = 0
          self.pust = 0.0
 
-    def vurder_stabilitet_G(self, tot_G_values, toleranse=5):
+    def vurder_stabilitet_P(self, tot_P_values, toleranse=5):
             """
-            Vurderer akselerometer-aktivitet basert på terskler INNENFOR vinduet,
-            UTEN å beregne gjennomsnitt av tot_G_values.
-            Klassifiserer vinduet basert på om noen verdier er høye, eller om alle er lave.
-            Den videre logikken med å samle 10 nivåer og ta snittet av DEM er beholdt.
+            Vurderer stabilitet basert på en 2 sekunders samplingsperiode, funksjonen tar høyeste og laveste i listen
+            og sjekker om differansen er over 5mm. Om differansen ikke er over dette blir puste stopp retunert. Dersom 
+            puste stopp blir telt kontinuerlig over en periode på 60 sekunder retuneres puster ikke. 
             """
-            #if not tot_G_values: return self.last_computed_accel_status
+            count = None
 
             # Konverter til numpy array for enklere testing
-            g_array = np.array(tot_G_values)
+            p_array = np.array(tot_P_values)
 
             # Finn maks og min
-            max_val = np.max(g_array)
-            min_val = np.min(g_array)
+            max_val = np.max(p_array)
+            min_val = np.min(p_array)
 
             # Sjekk om forskjellen overstiger 5
             if max_val - min_val > toleranse:
                 #print("Avvik større enn 5!")
-                self.svar = "Puster"
+                self.svar = "puster"
+                count = 0
             else:
                 #print("Alt innenfor grense.")
-                self.svar = "Puster Ikke"
+                self.svar = "puste stopp"
+                count = +1
+                if (count < 30):
+                    self.svar = "puster ikke"
 
-            self.last_computed_accel_status = self.svar
+
+            self.last_computed_puste_status = self.svar
             return self.svar 
 
 
 
-    def tell_signalskifter(self, data):
+    def kalkuler_pustefrekvens(self, data):
+        '''
+        Denne funksjonen teller bytter mellom + og - av den deriverte mellom hver tidsenhet av en liste med 160 verdier.
+        Dette tilsvarer 8 sekunder med en sampling på 20hz, når det er telt enten 5 positive eller 5 negative verdier blir
+        en teller oppdatert med +1. Det betyr at refleksjonflaten må holde samme retning i 250 ms sammenhengende. 
+        Dette fjerner sannsynlighten for og telle "feil ved støy. Resultatet blir brukt til og beregne pustefrekvens
+        '''
         count = 0
         current_sign = None
         streak = 0
@@ -120,32 +130,43 @@ class VL6180XAnalyser:
 
         Range_data = self.sensor.range
 
-        self.raw_accel_buffer.append(Range_data)
+        self.raw_puste_buffer.append(Range_data)
         Range_data_pust = Range_data - self.last_range_data
-        self.raw_gyro_buffer.append(Range_data_pust)
+        self.raw_puste_frekvens_buffer.append(Range_data_pust)
 
         self.last_range_data = Range_data
 
-        status_fra_G = self.last_computed_accel_status
+        status_fra_pust = self.last_computed_puste_status
     
 
-        if len(self.raw_accel_buffer) == self.window_size:
+        if len(self.raw_puste_buffer) == self.window_size:
             # Kall de (nå modifiserte) vurderingsfunksjonene
-            status_fra_G = self.vurder_stabilitet_G(list(self.raw_accel_buffer))
+            status_fra_pust = self.vurder_stabilitet_P(list(self.raw_puste_buffer))
             
 
-            self.raw_accel_buffer.clear()
+            self.raw_puste_buffer.clear()
 
-        if len(self.raw_gyro_buffer) == self.window_size_pust:
-            count  = self.tell_signalskifter(list(self.raw_gyro_buffer))
+        if len(self.raw_puste_frekvens_buffer) == self.window_size_pust:
+            count  = self.kalkuler_pustefrekvens(list(self.raw_puste_frekvens_buffer))
 
             self.pust = (count/8/2) * 60
-            self.raw_gyro_buffer.clear()
-            
+            self.raw_puste_frekvens_buffer.clear()
+
+        if (self.pust >= 12):
+             puste_frekvens = "lav"
+        elif (12 < self.pust <= 20):
+            puste_frekvens = "normal"
+        elif (self.pust > 20):
+            puste_frekvens = "Høy"
+        else:
+            puste_frekvens = "initialiserer"
+
+
+        
 
         return {        
-            'aks_status': status_fra_G,
-            'pust_frekvens': self.pust
+            'pust_status': status_fra_pust,
+            'pust_frekvens': puste_frekvens
         }
     
 

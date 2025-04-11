@@ -15,8 +15,8 @@ class Status:
         self.aks_sensor = Akssensor.MPU6050_Orientation()
         self.LFR_sensor = pustesensor.VL6180XAnalyser()
         self.ivann = False
-        self.data_aks = {}
-        self.data_LFR = {}
+        self.data_aks = {} #'total_G': tot_G "float",   'total_Gyro': tot_Gyro "float",     'aks_status': status_fra_G "string",     'gyro_status': status_fra_Gyro "string"
+        self.data_LFR = {} # 'pust_status': status_fra_pust, 'pust_frekvens': puste_frekvens "initialiserer, lav, middels, høy"
         self.data_pulse = {} # {'puls': median_bpm "float",   'puls_status': self.puls_status "bool"}
         self.data_pressure = {} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool"} 
         self.oppstart = False
