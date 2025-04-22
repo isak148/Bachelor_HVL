@@ -150,9 +150,9 @@ class MPU6050_Orientation(mpu6050):
             if len(self.accel_stabilitet_historikk) >= 10:
                 snitt_nivå = np.mean(self.accel_stabilitet_historikk)
                 rundet_snitt = int(round(snitt_nivå))
-                if rundet_snitt == 1: self.last_computed_accel_status = "I Ro"
-                elif rundet_snitt == 2: self.last_computed_accel_status = "Normal Aktivitet"
-                elif rundet_snitt == 3: self.last_computed_accel_status = "Høy Aktivitet"
+                if rundet_snitt == 1: self.last_computed_accel_status = "Stille"
+                elif rundet_snitt == 2: self.last_computed_accel_status = "Moderat bevegelse"
+                elif rundet_snitt == 3: self.last_computed_accel_status = "Høy bevegelse"
                 else: self.last_computed_accel_status = f"Ukjent G ({rundet_snitt})"
                 self.accel_stabilitet_historikk.clear()
 
@@ -222,11 +222,19 @@ class MPU6050_Orientation(mpu6050):
             self.raw_accel_buffer.clear()
             self.raw_gyro_buffer.clear()
 
+        if accel_data['z'] <=-0.25:
+            retning = ("Ned")
+        elif accel_data['z']>=0.1:
+            retning = ("Opp")
+        else:
+            retning = ("Plan")
+
         return {
-            'total_G': tot_G,
-            'total_Gyro': tot_Gyro,
-            'aks_status': status_fra_G,
-            'gyro_status': status_fra_Gyro
+            'Total_G': tot_G,
+            'Total_Gyro': tot_Gyro,
+            'Aks_Status': status_fra_G,
+            'Gyro_Status': status_fra_Gyro,
+            'Retning': retning
         }
 
 # --- Hovedprogram (uendret fra forrige versjon) ---

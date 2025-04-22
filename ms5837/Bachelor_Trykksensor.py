@@ -58,7 +58,7 @@ class analyse_MS5837:
                         print("Sensor read failed!")
                         exit(1)
                 
-                if (Trykk > 1090): # ca 70cm under vann. 
+                if (Trykk > 1070): # ca 50cm under vann. 
                         under_vann = True
                 else:
                         under_vann = False 
@@ -69,10 +69,10 @@ class analyse_MS5837:
                 else:
                         Ivann = False
 
-                return   {'status' : self.retningsendring,
+                return   {'Retningsendring' : self.retningsendring,
                          'Trykk': Trykk,
                          'I_vann': Ivann,
-                         'under_vann': under_vann} 
+                         'Under_vann': under_vann} 
 
 
 
