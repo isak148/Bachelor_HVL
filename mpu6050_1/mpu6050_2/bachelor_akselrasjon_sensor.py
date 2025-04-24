@@ -151,8 +151,8 @@ class MPU6050_Orientation(mpu6050):
                 snitt_nivå = np.mean(self.accel_stabilitet_historikk)
                 rundet_snitt = int(round(snitt_nivå))
                 if rundet_snitt == 1: self.last_computed_accel_status = "Stille"
-                elif rundet_snitt == 2: self.last_computed_accel_status = "Moderat bevegelse"
-                elif rundet_snitt == 3: self.last_computed_accel_status = "Høy bevegelse"
+                elif rundet_snitt == 2: self.last_computed_accel_status = "Moderat"
+                elif rundet_snitt == 3: self.last_computed_accel_status = "Høy"
                 else: self.last_computed_accel_status = f"Ukjent G ({rundet_snitt})"
                 self.accel_stabilitet_historikk.clear()
 
@@ -190,8 +190,8 @@ class MPU6050_Orientation(mpu6050):
             snitt_nivå = np.mean(self.gyro_stabilitet_historikk)
             rundet_snitt = int(round(snitt_nivå))
             if rundet_snitt == 1: self.last_computed_gyro_status = "Stille"
-            elif rundet_snitt == 2: self.last_computed_gyro_status = "Moderat bevegelse"
-            elif rundet_snitt == 3: self.last_computed_gyro_status = "Høy bevegelse"
+            elif rundet_snitt == 2: self.last_computed_gyro_status = "Moderat"
+            elif rundet_snitt == 3: self.last_computed_gyro_status = "Høy"
             else: self.last_computed_gyro_status = f"Ukjent Gyro ({rundet_snitt})"
             self.gyro_stabilitet_historikk.clear()
 

@@ -1,6 +1,6 @@
 from mpu6050_1.mpu6050_2 import bachelor_akselrasjon_sensor as Akssensor
 from ms5837 import Bachelor_Trykksensor as Trykksensor
-from ArduinoAD8232ECG import Bachelor_Pulsmåling as pulssensor
+from ArduinoAD8232ECG.Bachelor_Pulsmåling import AnalyseAD8232 as pulssensor
 from VL6180X.examples import bachelor_pustesenor as pustesensor 
 import threading
 import time
@@ -17,8 +17,8 @@ class Status:
         self.ivann = False
         self.data_aks = {} #'total_G': tot_G "float",   'total_Gyro': tot_Gyro "float",     'aks_status': status_fra_G "string",     'gyro_status': status_fra_Gyro "string"
         self.data_LFR = {} # 'pust_status': status_fra_pust, 'pust_frekvens': puste_frekvens "initialiserer, lav, middels, høy"
-        self.data_pulse = {} # {'puls': median_bpm "float",   'puls_status': self.puls_status "bool"}
-        self.data_pressure = {} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool"} 
+        self.data_pulse = {} # {'puls': median_bpm "float",   'puls_status': self.puls_status "lav, middels, høy"}
+        self.data_preassure = {} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool"} 
         self.oppstart = False
     
     def threding_start(self,verdi):
@@ -32,25 +32,151 @@ class Status:
         while(self.oppstart):
             self.data_aks = self.aks_sensor.oppdater_og_vurder_status()
         
-            return {"aks": self.data_aks}
+            return {self.data_aks}
     
     def get_data_LFR_Preasure(self):
         while(self.oppstart):
             self.data_LFR = self.LFR_sensor.analyserer_stopp()
-            self.data_preasure = self.trykk_sensor.read_sensor_data() 
+            self.data_preassure = self.trykk_sensor.read_sensor_data() 
             
             return {      
-                "LFR": self.data_LFR,
-                "pressure": self.data_pressure
+                self.data_LFR,
+                self.data_pressure
                 }
 
     def get_data_pulse(self):
         while(self.oppstart):
-            self.data_pulse = self.puls_sensor  # her må man få inn en klasse som retunerer noe brukende
+            self.data_pulse = self.puls_sensor.get_data()  # her må man få inn en klasse som retunerer noe brukende
             
             return {
-                "pulse": self.data_pulse    
+                self.data_pulse    
                 }
+        
+    def get_data_bool(self):
+         Retning = self.data_aks['Retning']
+         if (Retning == "Opp"):
+              Retning_Opp = True
+              Retning_Plan = False
+              Retning_Ned = False 
+         elif (Retning == "Plan"):
+              Retning_Opp = False
+              Retning_Plan = True
+              Retning_Ned = False
+         elif (Retning == "Ned"):
+              Retning_Opp = False
+              Retning_Plan = False
+              Retning_Ned = True
+         else:
+              Retning_Opp = False
+              Retning_Plan = False
+              Retning_Ned = False
+              
+         Aks_Status = self.data_aks['Aks_Status']
+         if(Aks_Status == "Stille"):
+              Aks_Status_Stille = True
+              Aks_Status_Moderat = False
+              Aks_status_Høy = False
+
+         elif(Aks_Status == "Moderat"):
+              Aks_Status_Stille = False
+              Aks_Status_Moderat = True
+              Aks_status_Høy = False
+         elif(Aks_Status == "høy" ):
+              Aks_Status_Stille = False
+              Aks_Status_Moderat = False
+              Aks_status_Høy = True
+         else:
+              Aks_Status_Stille = False
+              Aks_Status_Moderat = False
+              Aks_status_Høy = False
+               
+         Gyro_Status = self.data_aks["Gyro_Status"]  
+         if(Gyro_Status == "Stille"):
+              Aks_Status_Stille = True
+              Aks_Status_Moderat = False
+              Aks_status_Høy = False
+
+         elif(Gyro_Status == "Moderat"):
+              Aks_Status_Stille = False
+              Aks_Status_Moderat = True
+              Aks_status_Høy = False
+         elif(Gyro_Status == "høy" ):
+              Aks_Status_Stille = False
+              Aks_Status_Moderat = False
+              Aks_status_Høy = True
+         else:
+              Aks_Status_Stille = False
+              Aks_Status_Moderat = False
+              Aks_status_Høy = False
+
+         Pust_Status = self.data_LFR['pust_status']
+         if (Pust_Status == "Lav" ):
+              pass
+         elif (Pust_Status == "Normal"):
+              pass
+         elif (Pust_Status == "Høy"):
+              pass
+         else
+              
+
+
+         Puste_Frekvens = self.data_LFR['pust_frekvens']
+          if (Puste_Frekvens == "Lav" ):
+              pass
+         elif (Puste_Frekvens == "Normal"):
+              pass
+         elif (Puste_Frekvens == "Høy"):
+              pass
+         else:
+
+         Puls_Status = self.data_pulse['puls_status']
+
+         I_vann = self.data_preassure['I_vann']
+         Under_vann = self.data_preassure['Under_vann']
+
+         return {
+              'Retning': Retning,
+              'Aks_Status' : Aks_Status,
+              'Gyro_Status': Gyro_Status,
+              'Pust_Status': Pust_Status,
+              'Puste_frekvens': Puste_Frekvens,
+              'Puls_Status': puls_status,
+              'I_vann': I_vann,
+              'Under_vann': Under_vann
+         }
+
+
+
+    ''' AKS 
+          return {
+            'Total_G': tot_G,
+            'Total_Gyro': tot_Gyro,
+            'Aks_Status': status_fra_G,
+            'Gyro_Status': status_fra_Gyro,
+            'Retning': retning
+        }
+    '''     
+   
+    ''' LFR
+     return {        
+            'pust_status': status_fra_pust,
+            'pust_frekvens': puste_frekvens
+        }
+    '''
+
+    ''' PULS
+    return {'puls': median_bpm,
+                    'puls_status': self.puls_status}
+    '''
+    ''' PUST
+     return   {'Retningsendring' : self.retningsendring,
+                         'Trykk': Trykk,
+                         'I_vann': Ivann,
+                         'Under_vann': under_vann} 
+
+    '''
+
+
 
 
     def Svømmer(self):
@@ -99,7 +225,10 @@ class Status:
         else:
             status = False
         return status
- 
+    
+    def Initialiserer(self):
+        # skal retunere initaialiserer viss en sensor returnerer initialiserer eller ubestemt under oppstartsfasen.
+         pass
 
     def aktivert(self):
         # Denne skal bestemme om svømmeren er i vann og aktivere status analyse.

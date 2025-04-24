@@ -153,9 +153,9 @@ class VL6180XAnalyser:
             self.raw_puste_frekvens_buffer.clear()
 
         if (self.pust >= 12):
-             puste_frekvens = "lav"
+             puste_frekvens = "Lav"
         elif (12 < self.pust <= 20):
-            puste_frekvens = "normal"
+            puste_frekvens = "Normal"
         elif (self.pust > 20):
             puste_frekvens = "Høy"
         else:

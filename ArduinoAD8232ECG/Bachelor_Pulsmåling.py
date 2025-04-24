@@ -31,7 +31,7 @@ class AnalyseAD8232:
             if value > self.THRESHOLD and last_value <= self.THRESHOLD:
                 if last_peak_time is None:
                     last_peak_time = now
-                    print("Første topp registrert")
+                    #print("Første topp registrert")
                 else:
                     rr_interval = now - last_peak_time
                     if rr_interval > self.DEBOUNCE_TIME:
@@ -41,16 +41,16 @@ class AnalyseAD8232:
                             self.bpm_history.pop(0)
 
                         median_bpm = statistics.median(self.bpm_history)
-                        print(f"Puls (median av siste {len(self.bpm_history)}): {median_bpm:.1f} BPM")
+                        #print(f"Puls (median av siste {len(self.bpm_history)}): {median_bpm:.1f} BPM")
 
                         last_peak_time = now
                 
             if (median_bpm <= 100):
-                self.puls_status = "lav"
+                self.puls_status = "Lav"
             elif (100 > median_bpm > 150):
-                self.puls_status = "middel"
+                self.puls_status = "Middel"
             else:
-                self.puls_status = "høy"
+                self.puls_status = "Høy"
 
             last_value = value
             time.sleep(0.01)
