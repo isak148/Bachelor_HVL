@@ -72,14 +72,14 @@ class VL6180XAnalyser:
             # Sjekk om forskjellen overstiger 5
             if max_val - min_val > toleranse:
                 #print("Avvik større enn 5!")
-                self.svar = "puster"
+                self.svar = "Puster"
                 count = 0
             else:
                 #print("Alt innenfor grense.")
-                self.svar = "puste stopp"
+                self.svar = "Puste_Stopp"
                 count = +1
                 if (count < 30):
-                    self.svar = "puster ikke"
+                    self.svar = "Puster_Ikke"
 
 
             self.last_computed_puste_status = self.svar
@@ -165,8 +165,8 @@ class VL6180XAnalyser:
         
 
         return {        
-            'pust_status': status_fra_pust,
-            'pust_frekvens': puste_frekvens
+            'Pust_Status': status_fra_pust,
+            'Pust_Frekvens': puste_frekvens
         }
     
 

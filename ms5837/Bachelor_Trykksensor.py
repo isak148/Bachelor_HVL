@@ -31,19 +31,19 @@ class analyse_MS5837:
                         Trykk_dev = Trykk - self.last_trykk
                         self.last_trykk = Trykk
                         if (Trykk_dev < 0 - 0.5):
-                                self.status_endring = "synkende"
+                                self.status_endring = "Synkende"
                                 if (self.status_endring == self.forrgie_status):
-                                        self.retningsendring = "synkende"
+                                        self.retningsendring = "Synkende"
                                 else:
-                                        self.retningsendring = "uendret"
+                                        self.retningsendring = "Uendret"
                         elif (Trykk_dev > 0 + 0.5):
-                                self.status_endring = "økende"
+                                self.status_endring = "ØKende"
                                 if (self.status_endring == self.forrgie_status):
-                                        self.retningsendring = "økende"
+                                        self.retningsendring = "Økende"
                                 else:
-                                        self.retningsendring = "uendret" 
+                                        self.retningsendring = "Uendret" 
                         else:
-                                self.status_endring = "uendret"
+                                self.status_endring = "Uendret"
                                 
                        
                         

@@ -55,7 +55,7 @@ class AnalyseAD8232:
             last_value = value
             time.sleep(0.01)
 
-            return {'puls': median_bpm,
-                    'puls_status': self.puls_status}
+            return {'Puls': median_bpm,
+                    'Puls_Status': self.puls_status}
 
    

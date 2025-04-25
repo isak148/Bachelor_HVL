@@ -41,7 +41,7 @@ class Status:
             
             return {      
                 self.data_LFR,
-                self.data_pressure
+                self.data_preassure
                 }
 
     def get_data_pulse(self):
@@ -92,57 +92,124 @@ class Status:
                
          Gyro_Status = self.data_aks["Gyro_Status"]  
          if(Gyro_Status == "Stille"):
-              Aks_Status_Stille = True
-              Aks_Status_Moderat = False
-              Aks_status_Høy = False
-
+              Gyro_Status_Stille = True
+              Gyro_Status_Moderat = False
+              Gyro_status_Høy = False
          elif(Gyro_Status == "Moderat"):
-              Aks_Status_Stille = False
-              Aks_Status_Moderat = True
-              Aks_status_Høy = False
+              Gyro_Status_Stille = False
+              Gyro_Status_Moderat = True
+              Gyro_status_Høy = False
          elif(Gyro_Status == "høy" ):
-              Aks_Status_Stille = False
-              Aks_Status_Moderat = False
-              Aks_status_Høy = True
+              Gyro_Status_Stille = False
+              Gyro_Status_Moderat = False
+              Gyro_status_Høy = True
          else:
-              Aks_Status_Stille = False
-              Aks_Status_Moderat = False
-              Aks_status_Høy = False
+              Gyro_Status_Stille = False
+              Gyro_Status_Moderat = False
+              Gyro_status_Høy = False
 
-         Pust_Status = self.data_LFR['pust_status']
-         if (Pust_Status == "Lav" ):
-              pass
-         elif (Pust_Status == "Normal"):
-              pass
-         elif (Pust_Status == "Høy"):
-              pass
-         else
+         Pust_Status = self.data_LFR['Pust_Status']
+         if (Pust_Status == "Puster" ):
+              Pust_Status_Puster = True
+              Pust_Status_Puste_stopp = False
+              Pust_Status_Puster_Ikke = False
+         elif (Pust_Status == "Puste_Stopp"):
+              Pust_Status_Puster = False
+              Pust_Status_Puste_stopp = True
+              Pust_Status_Puster_Ikke = False
               
-
-
-         Puste_Frekvens = self.data_LFR['pust_frekvens']
-          if (Puste_Frekvens == "Lav" ):
-              pass
-         elif (Puste_Frekvens == "Normal"):
-              pass
-         elif (Puste_Frekvens == "Høy"):
-              pass
+         elif (Pust_Status == "Puster_Ikke"):
+              Pust_Status_Puster = False
+              Pust_Status_Puste_stopp = False
+              Pust_Status_Puster_Ikke = True
          else:
+              Pust_Status_Puster = False
+              Pust_Status_Puste_stopp = False
+              Pust_Status_Puster_Ikke = False
+              
+         Puste_Frekvens = self.data_LFR['Pust_Frekvens']
+         if (Puste_Frekvens == "Lav" ):
+              Pust_Frekvens_Lav = True
+              Pust_Frekvens_Normal = False
+              Pust_Frekvens_Høy = False 
+         elif (Puste_Frekvens == "Normal"):
+              Pust_Frekvens_Lav = True
+              Pust_Frekvens_Normal = False
+              Pust_Frekvens_Høy = False
+         elif (Puste_Frekvens == "Høy"):
+              Pust_Frekvens_Lav = True
+              Pust_Frekvens_Normal = False
+              Pust_Frekvens_Høy = False
+         else:
+              Pust_Frekvens_Lav = False
+              Pust_Frekvens_Normal = False
+              Pust_Frekvens_Høy = False
 
-         Puls_Status = self.data_pulse['puls_status']
-
-         I_vann = self.data_preassure['I_vann']
-         Under_vann = self.data_preassure['Under_vann']
-
+         Puls_Status = self.data_pulse['Puls_Status']
+         if (Puls_Status == "Lav"):
+              Puls_Status_Lav = True
+              Puls_Status_Middel = False
+              Puls_Status_Høy = False
+         elif (Puls_Status == "Middel"):
+              Puls_Status_Lav = False
+              Puls_Status_Middel = True
+              Puls_Status_Høy = False
+         elif (Puls_Status == "Høy"):
+              Puls_Status_Lav = False
+              Puls_Status_Middel = False
+              Puls_Status_Høy = True
+         else:
+              Puls_Status_Lav = False
+              Puls_Status_Middel = False
+              Puls_Status_Høy = False
+        
+         I_vann = self.data_preassure['I_vann'] #Denne returnerer bare True False
+         
+         Under_vann = self.data_preassure['Under_vann'] #Denne returnerer bare True, False
+         
+         Retningsendring = self.data_preassure['Retningsendring']
+         if (Retningsendring == "Uendret"):
+               Retningsendring_Uendret = True
+               Retningsendring_Synkende = False
+               Retningsendring_Økende = False
+         elif (Retningsendring == "Synkende"):
+               Retningsendring_Uendret = False
+               Retningsendring_Synkende = True
+               Retningsendring_Økende = False
+         elif (Retningsendring == "Økende"):
+               Retningsendring_Uendret = False
+               Retningsendring_Synkende = False
+               Retningsendring_Økende = True
+         else:
+               Retningsendring_Uendret = False
+               Retningsendring_Synkende = False
+               Retningsendring_Økende = False
+        
          return {
-              'Retning': Retning,
-              'Aks_Status' : Aks_Status,
-              'Gyro_Status': Gyro_Status,
-              'Pust_Status': Pust_Status,
-              'Puste_frekvens': Puste_Frekvens,
-              'Puls_Status': puls_status,
+              'Retning_Opp': Retning_Opp, 
+              'Retning_Plan': Retning_Plan,
+              'Retning_Ned': Retning_Ned,
+              'Aks_Status_Stille': Aks_Status_Stille,
+              'Aks_Status_Moderat': Aks_Status_Moderat,
+              'Aks_status_Høy': Aks_status_Høy,
+              'Gyro_Status_Stille': Gyro_Status_Stille,
+              'Gyro_Status_Moderat': Gyro_Status_Moderat,
+              'Gyro_status_Høy': Gyro_status_Høy,
+              'Pust_Status_Puster': Pust_Status_Puster,
+              'Pust_Status_Puste_stopp': Pust_Status_Puste_stopp,
+              'Pust_Status_Puster_Ikke': Pust_Status_Puster_Ikke,
+              'Pust_Frekvens_Lav': Pust_Frekvens_Lav,  
+              'Pust_Frekvens_Normal': Pust_Frekvens_Normal,
+              'Pust_Frekvens_Høy': Pust_Frekvens_Høy,
+              'Puls_Status_Lav': Puls_Status_Lav,
+              'Puls_Status_Middel': Puls_Status_Middel,
+              'Puls_Status_Høy': Puls_Status_Høy,  
               'I_vann': I_vann,
-              'Under_vann': Under_vann
+              'Under_vann': Under_vann,
+              'Retningsendring_Uendret': Retningsendring_Uendret,
+              'Retningsendring_Synkende': Retningsendring_Synkende,
+              'Retningsendring_Økende': Retningsendring_Økende
+
          }
 
 
@@ -159,14 +226,14 @@ class Status:
    
     ''' LFR
      return {        
-            'pust_status': status_fra_pust,
-            'pust_frekvens': puste_frekvens
+            'Pust_Status': status_fra_pust,
+            'Pust_Frekvens': puste_frekvens
         }
     '''
 
     ''' PULS
     return {'puls': median_bpm,
-                    'puls_status': self.puls_status}
+                    'Puls_Status': self.puls_status}
     '''
     ''' PUST
      return   {'Retningsendring' : self.retningsendring,
@@ -182,6 +249,8 @@ class Status:
     def Svømmer(self):
         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
+        Data = self.get_data_bool()
+
         if self.data_aks == "Normal Aktivitet":
             status = True
         else:
@@ -191,6 +260,7 @@ class Status:
     def Flyter(self):
          # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
+        Data = self.get_data_bool()
         if self.data_aks == "Stille":
             status = True
         else:
@@ -200,39 +270,52 @@ class Status:
     def Dykker(self):
         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
+        Data = self.get_data_bool()
         if self.data_trykk == "Økende":
             status = True
         else:
             status = False
+       
         return status
         
 
     def Svømmer_opp(self):
          # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
+        Data = self.get_data_bool()
         if self.data_trykk == "Synkende":
             status = True
         else:
             status = False
+        
         return status
     
     
     def Drukner(self):
         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false 
+        Data = self.get_data_bool()
         if self.data_aks == "Høy aktivitet"& self.data_LFR == "Puster ikke":
             status = True
         else:
             status = False
+       
         return status
     
     def Initialiserer(self):
         # skal retunere initaialiserer viss en sensor returnerer initialiserer eller ubestemt under oppstartsfasen.
-         pass
+        Data = self.get_data_bool()
+        if ():
+              pass
+        else:
+              pass
+        
+        return False
 
+        
     def aktivert(self):
         # Denne skal bestemme om svømmeren er i vann og aktivere status analyse.
-        if self.trykk_sensor.read_sensor_data()['I_vann'] == True:
+        if self.data_preassure == True:
             self.ivann = True
             count = 0
         elif self.trykk_sensor.read_sensor_data()['I_vann'] == False:
