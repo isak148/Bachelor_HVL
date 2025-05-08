@@ -14,6 +14,7 @@ class analyse_MS5837:
                 self.Ivann = False
                 self.forrgie_status = None
                 self.retningsendring = None
+                self.Teller = 0 
 
                 if not self.sensor.init():
                         # We must initialize the sensor before reading it
@@ -60,8 +61,13 @@ class analyse_MS5837:
                 
                 if (Trykk > 1070): # ca 50cm under vann. 
                         under_vann = True
+                        self.Teller += 1 
                 else:
-                        under_vann = False 
+                        under_vann = False
+                        self.Teller = 0
+                
+                if (self.Teller > 60):
+                        under_vann_30s = True
 
                 
                 if (Trykk > 1025.6): # 1cm under vannoverflate = 0.981mbar: tilsvarer nå 2cm
@@ -72,7 +78,8 @@ class analyse_MS5837:
                 return   {'Retningsendring' : self.retningsendring,
                          'Trykk': Trykk,
                          'I_vann': Ivann,
-                         'Under_vann': under_vann} 
+                         'Under_vann': under_vann,
+                         'Under_vann_30s': under_vann_30s} 
 
 
 

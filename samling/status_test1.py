@@ -18,7 +18,7 @@ class Status:
         self.data_aks = {} #'total_G': tot_G "float",   'total_Gyro': tot_Gyro "float",     'aks_status': status_fra_G "string",     'gyro_status': status_fra_Gyro "string"
         self.data_LFR = {} # 'pust_status': status_fra_pust, 'pust_frekvens': puste_frekvens "initialiserer, lav, middels, høy"
         self.data_pulse = {} # {'puls': median_bpm "float",   'puls_status': self.puls_status "lav, middels, høy"}
-        self.data_preassure = {} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool"} 
+        self.data_preassure = {} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool", 'Under_vann_30s': under_vann_30s "Bool"} 
         self.oppstart = False
     
     def threding_start(self,verdi):
@@ -166,6 +166,8 @@ class Status:
          I_vann = self.data_preassure['I_vann'] #Denne returnerer bare True False
          
          Under_vann = self.data_preassure['Under_vann'] #Denne returnerer bare True, False
+
+         Under_Vann_30s = self.data_preassure["Under_Vann_30s"] # Denne returnerer true false 
          
          Retningsendring = self.data_preassure['Retningsendring']
          if (Retningsendring == "Uendret"):
@@ -191,10 +193,10 @@ class Status:
               'Retning_Ned': Retning_Ned,
               'Aks_Status_Stille': Aks_Status_Stille,
               'Aks_Status_Moderat': Aks_Status_Moderat,
-              'Aks_status_Høy': Aks_status_Høy,
+              'Aks_Status_Høy': Aks_status_Høy,
               'Gyro_Status_Stille': Gyro_Status_Stille,
               'Gyro_Status_Moderat': Gyro_Status_Moderat,
-              'Gyro_status_Høy': Gyro_status_Høy,
+              'Gyro_Status_Høy': Gyro_status_Høy,
               'Pust_Status_Puster': Pust_Status_Puster,
               'Pust_Status_Puste_stopp': Pust_Status_Puste_stopp,
               'Pust_Status_Puster_Ikke': Pust_Status_Puster_Ikke,
@@ -206,6 +208,7 @@ class Status:
               'Puls_Status_Høy': Puls_Status_Høy,  
               'I_vann': I_vann,
               'Under_vann': Under_vann,
+              'Under_vann_30s': Under_Vann_30s,
               'Retningsendring_Uendret': Retningsendring_Uendret,
               'Retningsendring_Synkende': Retningsendring_Synkende,
               'Retningsendring_Økende': Retningsendring_Økende
@@ -251,17 +254,31 @@ class Status:
         # True eller false
         Data = self.get_data_bool()
 
-        if self.data_aks == "Normal Aktivitet":
+        if ((Data['Retning_Opp'] == True | Data['Retning_Plan'] == True) &
+            (Data['Aks_Status_Moderat'] == True | Data['Aks_Status_Høy'] == True) &
+            (Data['Gyro_Status_Moderat'] == True | Data['Gyro_Status_Høy'] == True) &
+            (Data['Retningsendring_Uendret'] == True) &
+            (Data['Under_vann'] == False) &
+            (Data['Puls_Status_Middel'] == True | Data['Puls_Status_Høy'] == True) &
+            (Data['Pust_Frekvens_Normal'] == True | Data['Pust_Frekvens_Høy'] == True) &
+            (Data['Pust_Status_Puster'] == True)):
             status = True
         else:
             status = False
         return status
 
     def Flyter(self):
-         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
+        # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
         Data = self.get_data_bool()
-        if self.data_aks == "Stille":
+        if ((Data['Retning_Opp'] == True | Data['Retning_Plan'] == True) &
+            (Data['Aks_Status_Stille'] == True) &
+            (Data['Gyro_Status_Stille'] == True) &
+            (Data['Retningsendring_Uendret'] == True) &
+            (Data['Under_vann'] == False) &
+            (Data['Puls_Status_Lav'] == True | Data['Puls_Status_Middel'] == True) &
+            (Data['Pust_Frekvens_Lav'] == True | Data['Pust_Frekvens_Normal'] == True) &
+            (Data['Pust_Status_Puster'] == True)):
             status = True
         else:
             status = False
@@ -271,7 +288,14 @@ class Status:
         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
         Data = self.get_data_bool()
-        if self.data_trykk == "Økende":
+        if (( Data['Retning_Plan'] == True | Data['Retning_Ned'] == True) &
+            (Data['Aks_Status_Moderat'] == True | Data['Aks_Status_Høy'] == True) &
+            (Data['Gyro_Status_Moderat'] == True | Data['Gyro_Status_Høy'] == True) &
+            (Data['Retningsendring_Uendret'] == True | Data['Retningsendring_Økende'] == True) &
+            (Data['Under_vann'] == True) &
+            (Data['Puls_Status_Lav'] == True | Data['Puls_Status_Middel'] == True | Data['Puls_Status_Høy'] == True) &
+            (Data['Pust_Frekvens_Lav'] == True) &
+            (Data['Pust_Status_Puste_stopp'] == True)):
             status = True
         else:
             status = False
@@ -283,7 +307,14 @@ class Status:
          # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false
         Data = self.get_data_bool()
-        if self.data_trykk == "Synkende":
+        if ((Data['Retning_Opp'] == True) &
+            (Data['Aks_Status_Moderat'] == True | Data['Aks_Status_Høy'] == True) &
+            (Data['Gyro_Status_Moderat'] == True | Data['Gyro_Status_Høy'] == True) &
+            (Data['Retningsendring_Synkende'] == True) &
+            (Data['Under_vann'] == True) &
+            (Data['Puls_Status_Lav'] == True | Data['Puls_Status_Middel'] == True | Data['Puls_Status_Høy'] == True) &
+            (Data['Pust_Frekvens_Lav'] == True) &
+            (Data['Pust_Status_Puste_stopp'] == True)):
             status = True
         else:
             status = False
@@ -295,10 +326,21 @@ class Status:
         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false 
         Data = self.get_data_bool()
-        if self.data_aks == "Høy aktivitet"& self.data_LFR == "Puster ikke":
+        if ((Data['Retning_Opp'] == True | Data['Retning_Opp'] == True) &
+            (Data['Aks_Status_Lav'] == True | Data['Aks_Status_Moderat'] == True | Data['Aks_Status_Høy'] == True) &
+            (Data['Gyro_Status_Lav'] == True |Data['Gyro_Status_Moderat'] == True | Data['Gyro_Status_Høy'] == True) &
+            (Data['Retningsendring_Uendret'] == True | Data['Retningsendring_Synkende'] == True | Data['Retningsendring_Økende'] == True) &
+            (Data['Under_vann'] == True | Data['Under_vann'] == False) &
+            (Data['Puls_Status_Lav'] == True | Data['Puls_Status_Middel'] == True | Data['Puls_Status_Høy'] == True) &
+            (Data['Pust_Frekvens_Lav'] == True) &
+            (Data['Pust_Status_Puste_stopp'] == True) |  
+            (Data['Pust_Status_Puster_Ikke'] == True) |
+            (Data['Under_Vann_30s'] == True)):
             status = True
         else:
             status = False
+
+        # Om personen er x lenge under vann: 
        
         return status
     
@@ -379,7 +421,7 @@ if __name__ == "__main__":
                 elif(Status.Drukner()):
                         print("Drukner")
                 else:
-                        print("Uvisst status")
+                        print("Uvisst status / Initialiserer")
             ivann_aktiv = Status.aktivert() # Denne må være i hovedprogrammet og bestemme om svømmeren er i vann eller ikke.
            
         
