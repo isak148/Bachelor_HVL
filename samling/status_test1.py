@@ -374,7 +374,7 @@ if __name__ == "__main__":
     while True:
         ivann_aktiv =status.aktivert() # Sjekker om svømmeren er i vann har 0.5s sleep
        
-        if ivann_aktiv == True:
+        if (ivann_aktiv == True):
             status.threding_start(True)
             aks_thread = threading.Thread(target=status.get_data_aks, daemon=True)
             trykk_thread = threading.Thread(target=status.get_data_LFR_Preasure, daemon=True)
