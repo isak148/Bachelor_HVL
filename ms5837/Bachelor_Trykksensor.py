@@ -76,7 +76,7 @@ class analyse_MS5837:
                         Ivann = False
 
                 return   {'Retningsendring' : self.retningsendring,
-                         'Trykk': Trykk,
+                         'Trykk': Trykk,   
                          'I_vann': Ivann,
                          'Under_vann': under_vann,
                          'Under_vann_30s': under_vann_30s} 

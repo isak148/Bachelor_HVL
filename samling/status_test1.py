@@ -20,6 +20,7 @@ class Status:
         self.data_pulse = {} # {'puls': median_bpm "float",   'puls_status': self.puls_status "lav, middels, høy"}
         self.data_preassure = {} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool", 'Under_vann_30s': under_vann_30s "Bool"} 
         self.oppstart = False
+        self.count = 0 
     
     def threding_start(self,verdi):
         if(verdi == True):
@@ -32,26 +33,18 @@ class Status:
         while(self.oppstart):
             self.data_aks = self.aks_sensor.oppdater_og_vurder_status()
         
-            return {self.data_aks}
     
     def get_data_LFR_Preasure(self):
         while(self.oppstart):
             self.data_LFR = self.LFR_sensor.analyserer_stopp()
             self.data_preassure = self.trykk_sensor.read_sensor_data() 
-            
-            return {      
-                self.data_LFR,
-                self.data_preassure
-                }
+                 
 
     def get_data_pulse(self):
         while(self.oppstart):
             self.data_pulse = self.puls_sensor.get_data()  # her må man få inn en klasse som retunerer noe brukende
             
-            return {
-                self.data_pulse    
-                }
-        
+         
     def get_data_bool(self):
          Retning = self.data_aks['Retning']
          if (Retning == "Opp"):
@@ -225,15 +218,13 @@ class Status:
             'Gyro_Status': status_fra_Gyro,
             'Retning': retning
         }
-    '''     
-   
+    '''       
     ''' LFR
      return {        
             'Pust_Status': status_fra_pust,
             'Pust_Frekvens': puste_frekvens
         }
     '''
-
     ''' PULS
     return {'puls': median_bpm,
                     'Puls_Status': self.puls_status}
@@ -243,7 +234,6 @@ class Status:
                          'Trykk': Trykk,
                          'I_vann': Ivann,
                          'Under_vann': under_vann} 
-
     '''
 
 
@@ -333,14 +323,12 @@ class Status:
             (Data['Under_vann'] == True | Data['Under_vann'] == False) &
             (Data['Puls_Status_Lav'] == True | Data['Puls_Status_Middel'] == True | Data['Puls_Status_Høy'] == True) &
             (Data['Pust_Frekvens_Lav'] == True) &
-            (Data['Pust_Status_Puste_stopp'] == True) |  
-            (Data['Pust_Status_Puster_Ikke'] == True) |
+            (Data['Pust_Status_Puste_stopp'] == True) |  # OR om scømmeren ikke har pustet på lenge
+            (Data['Pust_Status_Puster_Ikke'] == True) |  # OR om svømmeren har vært under vann for lenge
             (Data['Under_Vann_30s'] == True)):
             status = True
         else:
-            status = False
-
-        # Om personen er x lenge under vann: 
+            status = False 
        
         return status
     
@@ -356,44 +344,47 @@ class Status:
 
         
     def aktivert(self):
+        '''Metoden sjekker om trykksensoren registrerer vann når den er i initial tilstanden False. 
+         hvis sensoren kommer 2cm under vann vil den starte opp alle sensorene med threads.'''
         # Denne skal bestemme om svømmeren er i vann og aktivere status analyse.
-        if self.data_preassure == True:
-            self.ivann = True
-            count = 0
-        elif self.trykk_sensor.read_sensor_data()['I_vann'] == False:
-            count=+1
-            if count > 10:
-                self.ivann = False
-                count = 0
-            else:
-                 self.ivann = True
+        if self.ivann == False: # Sjekker om 
+            I_vann = self.trykk_sensor.read_sensor_data(['I_vann']) 
+            if (I_vann == True):
+                self.ivann = True
         
         return self.ivann 
+    
+    def Deaktivert(self):
+        '''Kjører hvert sekund og hvis vesten ikke registrere vann på 10 sekunder så vil den deaktiveres'''
+        if (self.data_preassure['I_vann'] == False):
+            self.count +=1
+        else:
+            self.count = 0
+        
+        if(self.count >= 10):
+             self.ivann = False 
+        
+        return self.ivann
+             
+
         
 
 if __name__ == "__main__":
+    status = Status()
     while True:
-        ivann_aktiv =Status.aktivert() # Denne må være i hovedprogrammet og bestemme om svømmeren er i vann eller ikke.:
+        ivann_aktiv =status.aktivert() # Sjekker om svømmeren er i vann har 0.5s sleep
        
         if ivann_aktiv == True:
-            Status.threding_start(True)
-            data_aks = threading.Thread(target=Status.get_data_aks)
-            data_LFR_Trykk = threading.Thread(target=Status.get_data_LFR_Preasure)
-            data_puls = threading.Thread(target=Status.get_data_pulse)
-            aktivering = threading.Thread(target=Status.aktivert)
-            
-            data_aks.start()
-            data_LFR_Trykk.start()
-            data_puls.start()
-            aktivering.start()
+            status.threding_start(True)
+            aks_thread = threading.Thread(target=status.get_data_aks, daemon=True)
+            trykk_thread = threading.Thread(target=status.get_data_LFR_Preasure, daemon=True)
+            puls_thread = threading.Thread(target=status.get_data_pulse, daemon=True)
 
-            data_aks.join()
-            data_LFR_Trykk.join()
-            data_puls.join()
-            aktivering.join()
+            aks_thread.start()
+            trykk_thread.start()
+            puls_thread.start()
         else:
-            Status.threding_start(False)
-            
+            status.threding_start(False)
             
 
        
@@ -404,25 +395,26 @@ if __name__ == "__main__":
             data_LFR_Preasure = Status.get_data_LFR_Preasure()
             data_puls = Status.get_data_pulse()
             '''
-
+            time.sleep(1) # Oppdaterer status hvert sekund, utfra oppdatert sensor data. 
             if (True): # Denne må være tidsstyrt hvor ofte vi ønsker og oppdatere status, kanskje 1 gang i sekundet?
-                if (Status.Flyter()):
+                if (status.Flyter()):
                         print("Flyter")
                 
-                elif(Status.Svømmer()):
+                elif(status.Svømmer()):
                         print("Svømmer")
 
-                elif(Status.Dykker()):
+                elif(status.Dykker()):
                         print("Dykker")
                 
-                elif(Status.Svømmer_opp()):
+                elif(status.Svømmer_opp()):
                         print("Svømmer_opp")
                 
-                elif(Status.Drukner()):
+                elif(status.Drukner()):
                         print("Drukner")
                 else:
                         print("Uvisst status / Initialiserer")
-            ivann_aktiv = Status.aktivert() # Denne må være i hovedprogrammet og bestemme om svømmeren er i vann eller ikke.
+            
+            ivann_aktiv = status.Deaktivert() # Sjekker om svømmeren fortsatt er i vann.
            
         
         
