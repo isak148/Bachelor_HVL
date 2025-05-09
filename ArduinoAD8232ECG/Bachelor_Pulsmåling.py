@@ -4,6 +4,8 @@ import board
 import busio
 import adafruit_ads1x15.ads1015 as ADS1015
 import adafruit_ads1x15.analog_in as AnalogIn
+import csv
+
 class AnalyseAD8232:
     def __init__(self):
         # Initialiserer I2C og ADC
@@ -22,7 +24,7 @@ class AnalyseAD8232:
         # Leser av verdien fra ADC-kanalen
         return self.channel.value
     
-    def get_data(self):
+    def get_data(self, Lagre = False, Filnavn = ""):
             
             value = self.channel.value
             now = time.time()
@@ -53,9 +55,23 @@ class AnalyseAD8232:
                 self.puls_status = "Høy"
 
             last_value = value
+
+            if (Lagre == True):
+                self.skriv_til_fil(Filnavn, value)
+
             time.sleep(0.01)
 
             return {'Puls': median_bpm,
                     'Puls_Status': self.puls_status}
+    
+    def skriv_til_fil(self, filnavn, verdi):
+                if not filnavn.endswith(".csv"):
+                        filnavn += ".csv"  # Legger til .csv hvis det mangler
+
+                with open(filnavn, mode='a', newline='', encoding='utf-8') as fil:
+                        writer = csv.writer(fil)
+                        writer.writerow([verdi])  # Skriver én tallverdi på ny linje
+
+
 
    

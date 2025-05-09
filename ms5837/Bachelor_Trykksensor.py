@@ -22,7 +22,7 @@ class analyse_MS5837:
                         exit(1)
  
        
-        def read_sensor_data(self):    
+        def read_sensor_data(self, Lagre = False , Filnavn = ""):    
                 # Spew readings
                 time.sleep(0.5)
                 if self.sensor.read():
@@ -45,15 +45,6 @@ class analyse_MS5837:
                                         self.retningsendring = "Uendret" 
                         else:
                                 self.status_endring = "Uendret"
-                                
-                       
-                        
-
-                        #print(("Trykk_dev: %0.1f mbar ")%(Trykk_dev)) # Default is mbar (no arguments)
-
-                        
-                        #time.sleep(0.5) # Sleep for 500ms # Trengs i hovedløkke
-
 
                 else:
                         print("Sensor read failed!")
@@ -74,12 +65,25 @@ class analyse_MS5837:
                         Ivann = True
                 else:
                         Ivann = False
+                
+                if (Lagre == True):
+                        self.skriv_til_fil(Filnavn, Trykk)
+
 
                 return   {'Retningsendring' : self.retningsendring,
                          'Trykk': Trykk,   
                          'I_vann': Ivann,
                          'Under_vann': under_vann,
-                         'Under_vann_30s': under_vann_30s} 
+                         'Under_vann_30s': under_vann_30s}
+        
+        def skriv_til_fil(self, filnavn, verdi):
+                if not filnavn.endswith(".csv"):
+                        filnavn += ".csv"  # Legger til .csv hvis det mangler
+
+                with open(filnavn, mode='a', newline='', encoding='utf-8') as fil:
+                        writer = csv.writer(fil)
+                        writer.writerow([verdi])  # Skriver én tallverdi på ny linje
+
 
 
 

@@ -198,7 +198,7 @@ class MPU6050_Orientation(mpu6050):
         return self.last_computed_gyro_status
 
     # --- oppdater_og_vurder_status (uendret fra forrige versjon) ---
-    def oppdater_og_vurder_status(self):
+    def oppdater_og_vurder_status(self, Lagre = False, Filnavn = "" ):
         """
         Henter nye data, beregner magnituder, legger i buffere,
         og kaller vurderingsfunksjoner når bufferne er fulle.
@@ -229,13 +229,26 @@ class MPU6050_Orientation(mpu6050):
         else:
             retning = ("Plan")
 
+        if(Lagre == True):
+            self.skriv_til_fil(Filnavn, tot_G, tot_Gyro)
+
+
         return {
-            'Total_G': tot_G,
+            'Total_G': tot_G,   
             'Total_Gyro': tot_Gyro,
             'Aks_Status': status_fra_G,
             'Gyro_Status': status_fra_Gyro,
             'Retning': retning
         }
+    
+    
+    def skriv_til_fil(self, filnavn, verdi1, verdi2):
+        if not filnavn.endswith(".csv"):
+            filnavn += ".csv"  # Legger til .csv hvis det mangler
+
+        with open(filnavn, mode='a', newline='', encoding='utf-8') as fil:
+            writer = csv.writer(fil)
+            writer.writerow([verdi1, verdi2])  # Skriver begge verdiene på én linje
 
 # --- Hovedprogram (uendret fra forrige versjon) ---
 if __name__ == "__main__":

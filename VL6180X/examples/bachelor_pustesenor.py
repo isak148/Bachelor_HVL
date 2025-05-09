@@ -3,6 +3,7 @@ import board
 import busio
 import numpy as np
 from collections import deque
+import csv
 try:
     from scipy.signal import find_peaks, savgol_filter
 except ImportError:
@@ -126,7 +127,7 @@ class VL6180XAnalyser:
         return count
 
 
-    def analyserer_stopp(self):
+    def analyserer_stopp(self, Lagre = False, Filnavn = ""):
 
         Range_data = self.sensor.range
 
@@ -161,13 +162,24 @@ class VL6180XAnalyser:
         else:
             puste_frekvens = "initialiserer"
 
-
+        if(Lagre == True): # skriver til fil om Lagre er satt til True
+            self.skriv_til_fil(Filnavn, Range_data)
         
 
         return {        
             'Pust_Status': status_fra_pust,
             'Pust_Frekvens': puste_frekvens
         }
+    
+    def skriv_til_fil(self, filnavn, verdi):
+                if not filnavn.endswith(".csv"):
+                        filnavn += ".csv"  # Legger til .csv hvis det mangler
+
+                with open(filnavn, mode='a', newline='', encoding='utf-8') as fil:
+                        writer = csv.writer(fil)
+                        writer.writerow([verdi])  # Skriver én tallverdi på ny linje
+
+
     
 
 if __name__ == "__main__":

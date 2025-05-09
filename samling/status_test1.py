@@ -31,18 +31,18 @@ class Status:
     def get_data_aks(self):
         # Denne skal retunere: 'total_G': tot_G, 'is_periodic': last_periodicity_status,'retning' : retning
         while(self.oppstart):
-            self.data_aks = self.aks_sensor.oppdater_og_vurder_status()
+            self.data_aks = self.aks_sensor.oppdater_og_vurder_status() # True for lagre og ønsket filnavn
         
     
-    def get_data_LFR_Preasure(self):
+    def get_data_LFR_Preasure(self): 
         while(self.oppstart):
-            self.data_LFR = self.LFR_sensor.analyserer_stopp()
-            self.data_preassure = self.trykk_sensor.read_sensor_data() 
+            self.data_LFR = self.LFR_sensor.analyserer_stopp()          # True for lagre og ønsket filnavn
+            self.data_preassure = self.trykk_sensor.read_sensor_data()  # True for lagre og ønsket filnavn
                  
 
     def get_data_pulse(self):
         while(self.oppstart):
-            self.data_pulse = self.puls_sensor.get_data()  # her må man få inn en klasse som retunerer noe brukende
+            self.data_pulse = self.puls_sensor.get_data()               # True for lagre og ønsket filnavn
             
          
     def get_data_bool(self):
@@ -343,7 +343,7 @@ class Status:
         return False
 
         
-    def aktivert(self):
+    def Aktivert(self):
         '''Metoden sjekker om trykksensoren registrerer vann når den er i initial tilstanden False. 
          hvis sensoren kommer 2cm under vann vil den starte opp alle sensorene med threads.'''
         # Denne skal bestemme om svømmeren er i vann og aktivere status analyse.
@@ -368,11 +368,11 @@ class Status:
              
 
         
-
+'''
 if __name__ == "__main__":
     status = Status()
     while True:
-        ivann_aktiv =status.aktivert() # Sjekker om svømmeren er i vann har 0.5s sleep
+        ivann_aktiv =status.Aktivert() # Sjekker om svømmeren er i vann har 0.5s sleep
        
         if (ivann_aktiv == True):
             status.threding_start(True)
@@ -390,11 +390,7 @@ if __name__ == "__main__":
        
         while(ivann_aktiv):
 
-            '''
-            data_aks = Status.get_data_aks()
-            data_LFR_Preasure = Status.get_data_LFR_Preasure()
-            data_puls = Status.get_data_pulse()
-            '''
+         
             time.sleep(1) # Oppdaterer status hvert sekund, utfra oppdatert sensor data. 
             if (True): # Denne må være tidsstyrt hvor ofte vi ønsker og oppdatere status, kanskje 1 gang i sekundet?
                 if (status.Flyter()):
@@ -415,9 +411,43 @@ if __name__ == "__main__":
                         print("Uvisst status / Initialiserer")
             
             ivann_aktiv = status.Deaktivert() # Sjekker om svømmeren fortsatt er i vann.
+'''
            
         
-        
+if __name__ == "__main__":
+    status = Status()
+
+    # Start trådene umiddelbart (ingen sjekk for "i vann")
+    status.threding_start(True)
+    aks_thread = threading.Thread(target=status.get_data_aks, daemon=True)
+    trykk_thread = threading.Thread(target=status.get_data_LFR_Preasure, daemon=True)
+    puls_thread = threading.Thread(target=status.get_data_pulse, daemon=True)
+
+    aks_thread.start()
+    trykk_thread.start()
+    puls_thread.start()
+
+    # Start testklokke
+    start_tid = time.time()
+    kjøretid = 60  # sekunder
+
+    while time.time() - start_tid < kjøretid:
+        time.sleep(1)
+
+        if status.Flyter():
+            print("Flyter")
+        elif status.Svømmer():
+            print("Svømmer")
+        elif status.Dykker():
+            print("Dykker")
+        elif status.Svømmer_opp():
+            print("Svømmer opp")
+        elif status.Drukner():
+            print("Drukner")
+        else:
+            print("Uvisst status / Initialiserer")
+
+    print("Testmodus avsluttet etter 60 sekunder.")     
 
 
         
