@@ -371,10 +371,11 @@ class Status:
 
 if __name__ == "__main__":
     status = Status()
+    therding_running = False # Sjekker om trådene er startet opp eller ikke.
     while True:
         ivann_aktiv =status.aktivert() # Sjekker om svømmeren er i vann har 0.5s sleep
        
-        if ivann_aktiv == True:
+        if ivann_aktiv and not therding_running:
             status.threding_start(True)
             aks_thread = threading.Thread(target=status.get_data_aks, daemon=True)
             trykk_thread = threading.Thread(target=status.get_data_LFR_Preasure, daemon=True)
@@ -383,9 +384,11 @@ if __name__ == "__main__":
             aks_thread.start()
             trykk_thread.start()
             puls_thread.start()
-        else:
-            status.threding_start(False)
+            therding_running = True
             
+        elif not ivann_aktiv and therding_running:
+            status.threding_start(False)
+            therding_running = False
 
        
         while(ivann_aktiv):
