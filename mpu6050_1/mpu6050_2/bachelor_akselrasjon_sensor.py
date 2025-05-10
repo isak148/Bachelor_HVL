@@ -21,15 +21,11 @@ class MPU6050_Orientation(mpu6050):
         self.set_filter_range(self.FILTER_BW_188)    # Digital Low Pass Filter
 
         # Kalibrering
-        print("Starter kalibrering...")
+        #print("Starter kalibrering...")
         self.gyro_offset = self.calibrate_gyro(100)
         self.accel_offset = self.calibrate_accel(100)
-        print("Kalibrering fullført.")
+        #print("Kalibrering fullført.")
 
-        self.last_time = time.time()
-
-        # Felles variabler for statusvurdering
-        self.sample_rate = 100  # Hz (Samples per sekund)
         # Samme vindusstørrelse brukes for både akselerometer og gyro analyse
         self.window_size = 50 # 0.5 sekunds vindu (50 samples)
 
@@ -86,8 +82,7 @@ class MPU6050_Orientation(mpu6050):
 
     # --- Hent data (uendret) ---
     def get_data(self):
-        current_time = time.time()
-        self.last_time = current_time
+        
         try:
             accel_data_raw = self.get_accel_data(g=True)
             gyro_data_raw = self.get_gyro_data()

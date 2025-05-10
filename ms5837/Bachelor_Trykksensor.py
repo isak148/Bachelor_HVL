@@ -8,13 +8,13 @@ class analyse_MS5837:
         def __init__(self):
                 self.sensor = ms5837.MS5837_02BA()
                 self.last_trykk = 0.0
-                print("starter ")
+                #print("starter ")
                 self.status_endring = None
                 self.sensor.setFluidDensity(1010)
                 self.Ivann = False
                 self.forrgie_status = None
                 self.retningsendring = None
-                self.Teller = 0 
+                self.teller = 0 
 
                 if not self.sensor.init():
                         # We must initialize the sensor before reading it
@@ -52,12 +52,12 @@ class analyse_MS5837:
                 
                 if (Trykk > 1070): # ca 50cm under vann. 
                         under_vann = True
-                        self.Teller += 1 
+                        self.teller += 1 
                 else:
                         under_vann = False
-                        self.Teller = 0
+                        self.teller = 0
                 
-                if (self.Teller > 60):
+                if (self.teller > 60):
                         under_vann_30s = True
 
                 

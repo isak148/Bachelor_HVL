@@ -47,21 +47,20 @@ class VL6180XAnalyser:
          self.raw_puste_frekvens_buffer = deque(maxlen=self.window_size_pust)
 
          # Variabler for Akselerometer (G) stabilitetsvurdering
-         self.accel_stabilitet_historikk = []
          self.last_computed_puste_status = "Initialiserer..."
 
          self.svar = "initialiserer"
 
          self.last_range_data = 0
          self.pust = 0.0
+         self.count = None
 
     def vurder_stabilitet_P(self, tot_P_values, toleranse=5):
             """
             Vurderer stabilitet basert på en 2 sekunders samplingsperiode, funksjonen tar høyeste og laveste i listen
-            og sjekker om differansen er over 5mm. Om differansen ikke er over dette blir puste stopp retunert. Dersom 
+            og sjekker om differansen er over 5mm, Om differansen ikke er over dette blir puste stopp retunert. Dersom 
             puste stopp blir telt kontinuerlig over en periode på 60 sekunder retuneres puster ikke. 
             """
-            count = None
 
             # Konverter til numpy array for enklere testing
             p_array = np.array(tot_P_values)
@@ -74,12 +73,12 @@ class VL6180XAnalyser:
             if max_val - min_val > toleranse:
                 #print("Avvik større enn 5!")
                 self.svar = "Puster"
-                count = 0
+                self.count = 0
             else:
                 #print("Alt innenfor grense.")
                 self.svar = "Puste_Stopp"
-                count = +1
-                if (count < 30):
+                self.count = +1
+                if (self.count < 30):
                     self.svar = "Puster_Ikke"
 
 
