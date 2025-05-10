@@ -45,7 +45,7 @@ class MPU6050_Orientation(mpu6050):
         self.gyro_stabilitet_historikk = []
         self.last_computed_gyro_status = "Initialiserer..."
 
-    # --- Kalibreringsfunksjoner (uendret) ---
+    # --- Kalibreringsfunksjoner ---
     def calibrate_accel(self, samples=100):
         print(f"  Kalibrerer akselerometer ({samples} samples)...", end='')
         offset = {'x':0.0, 'y':0.0, 'z': 0.0}
@@ -103,7 +103,8 @@ class MPU6050_Orientation(mpu6050):
         gyro_data['y'] -= self.gyro_offset['y']
         gyro_data['z'] -= self.gyro_offset['z']
         return accel_data, gyro_data
-
+    
+    '''
     # --- Filterfunksjoner (uendret, ikke i bruk) ---
     def butter_highpass(self, cutoff, fs, order=5):
         nyquist = 0.5 * fs
@@ -115,7 +116,7 @@ class MPU6050_Orientation(mpu6050):
         b, a = self.butter_highpass(cutoff, fs, order=order)
         y = lfilter(b, a, data)
         return y
-
+    '''
     # --- Vurderingsfunksjoner ---
     def vurder_stabilitet_G(self, tot_G_values, ro_grense=1.0, høy_aktivitet_øvre_grense=1.65,høy_aktivitet_nedre_grense=0.65 , toleranse=0.05):
             """
@@ -204,6 +205,7 @@ class MPU6050_Orientation(mpu6050):
         og kaller vurderingsfunksjoner når bufferne er fulle.
         Returnerer øyeblikkelige verdier og de sist beregnede statusene.
         """
+        sleep(0.01)
         accel_data, gyro_data = self.get_data()
         tot_G = math.sqrt(accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2)
         tot_Gyro = math.sqrt(gyro_data['x']**2 + gyro_data['y']**2 + gyro_data['z']**2)
