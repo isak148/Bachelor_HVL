@@ -10,7 +10,7 @@ class AnalyseAD8232:
     def __init__(self):
         # Initialiserer I2C og ADC
         self.i2c = busio.I2C(board.SCL, board.SDA)
-        self.adc = ADS1015.ADS1015(i2c)
+        self.adc = ADS1015.ADS1015(self.i2c)
         self.channel = AnalogIn.AnalogIn(self.adc, ADS1015.P0)
         self.threshold = 26000
         self.debounce_time = 0.25  # sekunder
@@ -19,6 +19,7 @@ class AnalyseAD8232:
         self.last_value = 0
         self.bpm_history = []
         self.puls_status = None
+        self.median_bpm=0
 
     def read_sensor(self):
         # Leser av verdien fra ADC-kanalen
@@ -28,28 +29,29 @@ class AnalyseAD8232:
             
             value = self.channel.value
             now = time.time()
+            
 
             # Detekter ny topp (går over terskel og var under forrige gang)
             if value > self.threshold and self.last_value <= self.threshold:
-                if last_peak_time is None:
-                    last_peak_time = now
+                if self.last_peak_time is None:
+                    self.last_peak_time = now
                     #print("Første topp registrert")
                 else:
-                    rr_interval = now - last_peak_time
+                    rr_interval = now - self.last_peak_time
                     if rr_interval > self.debounce_time:
                         bpm = 60 / rr_interval
                         self.bpm_history.append(bpm)
                         if len(self.bpm_history) > self.max_history:
                             self.bpm_history.pop(0)
 
-                        median_bpm = statistics.median(self.bpm_history)
+                        self.median_bpm = statistics.median(self.bpm_history)
                         #print(f"Puls (median av siste {len(self.bpm_history)}): {median_bpm:.1f} BPM")
 
-                        last_peak_time = now
+                        self.last_peak_time = now
                 
-            if (median_bpm <= 100):
+            if (self.median_bpm <= 100):
                 self.puls_status = "Lav"
-            elif (100 > median_bpm > 150):
+            elif (100 > self.median_bpm > 150):
                 self.puls_status = "Middel"
             else:
                 self.puls_status = "Høy"
@@ -60,8 +62,9 @@ class AnalyseAD8232:
                 self.skriv_til_fil(Filnavn, value)
 
             time.sleep(0.01)
-
-            return {'Puls': median_bpm,
+            print(self.puls_status)
+            print(self.median_bpm)
+            return {'Puls': self.median_bpm,
                     'Puls_Status': self.puls_status}
     
     def skriv_til_fil(self, filnavn, verdi):
@@ -73,5 +76,9 @@ class AnalyseAD8232:
                         writer.writerow([verdi])  # Skriver én tallverdi på ny linje
 
 
-
+if __name__ == "__main__":
    
+    sensor = AnalyseAD8232()
+    while(True):
+        sensor.get_data()
+        time.sleep(0.01)

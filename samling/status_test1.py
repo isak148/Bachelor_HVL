@@ -12,7 +12,7 @@ class Status:
         self.variabler = {} 
         self.trykk_sensor = Trykksensor.analyse_MS5837()
         self.puls_sensor = pulssensor()
-        self.aks_sensor = Akssensor.MPU6050_Orientation()
+        self.aks_sensor = Akssensor.MPU6050_Orientation(0x68)
         self.LFR_sensor = pustesensor.VL6180XAnalyser()
         self.ivann = False
         self.data_aks = {} #'total_G': tot_G "float",   'total_Gyro': tot_Gyro "float",     'aks_status': status_fra_G "string",     'gyro_status': status_fra_Gyro "string"
@@ -156,9 +156,9 @@ class Status:
               Puls_Status_Middel = False
               Puls_Status_Høy = False
         
-         I_vann = self.data_preassure['I_vann'] #Denne returnerer bare True False
+         I_vann = self.data_preassure['I_Vann'] #Denne returnerer bare True False
          
-         Under_vann = self.data_preassure['Under_vann'] #Denne returnerer bare True, False
+         Under_vann = self.data_preassure['Under_Vann'] #Denne returnerer bare True, False
 
          Under_Vann_30s = self.data_preassure["Under_Vann_30s"] # Denne returnerer true false 
          
@@ -201,7 +201,7 @@ class Status:
               'Puls_Status_Høy': Puls_Status_Høy,  
               'I_vann': I_vann,
               'Under_vann': Under_vann,
-              'Under_vann_30s': Under_Vann_30s,
+              'Under_Vann_30s': Under_Vann_30s,
               'Retningsendring_Uendret': Retningsendring_Uendret,
               'Retningsendring_Synkende': Retningsendring_Synkende,
               'Retningsendring_Økende': Retningsendring_Økende
@@ -317,8 +317,8 @@ class Status:
         # True eller false 
         Data = self.get_data_bool()
         if ((Data['Retning_Opp'] == True | Data['Retning_Opp'] == True) &
-            (Data['Aks_Status_Lav'] == True | Data['Aks_Status_Moderat'] == True | Data['Aks_Status_Høy'] == True) &
-            (Data['Gyro_Status_Lav'] == True |Data['Gyro_Status_Moderat'] == True | Data['Gyro_Status_Høy'] == True) &
+            (Data['Aks_Status_Stille'] == True | Data['Aks_Status_Moderat'] == True | Data['Aks_Status_Høy'] == True) &
+            (Data['Gyro_Status_Stille'] == True |Data['Gyro_Status_Moderat'] == True | Data['Gyro_Status_Høy'] == True) &
             (Data['Retningsendring_Uendret'] == True | Data['Retningsendring_Synkende'] == True | Data['Retningsendring_Økende'] == True) &
             (Data['Under_vann'] == True | Data['Under_vann'] == False) &
             (Data['Puls_Status_Lav'] == True | Data['Puls_Status_Middel'] == True | Data['Puls_Status_Høy'] == True) &

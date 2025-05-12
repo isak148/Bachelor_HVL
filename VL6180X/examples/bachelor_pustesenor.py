@@ -13,7 +13,7 @@ except ImportError:
 
 # Importer det lokale Adafruit VL6180X biblioteket
 try:
-    import adafruit_vl6180x
+    from VL6180X.examples import adafruit_vl6180x
 except ImportError:
     print("Feil: Kunne ikke importere 'adafruit_vl6180x'.")
     print("Sørg for at biblioteket er installert eller tilgjengelig i PYTHONPATH.")
@@ -152,7 +152,7 @@ class VL6180XAnalyser:
             self.pust = (count/8/2) * 60
             self.raw_puste_frekvens_buffer.clear()
 
-        if (self.pust >= 12):
+        if (self.pust <= 12):
              puste_frekvens = "Lav"
         elif (12 < self.pust <= 20):
             puste_frekvens = "Normal"
@@ -186,8 +186,8 @@ if __name__ == "__main__":
 
     while(True):
         status =sensor.analyserer_stopp()
-        print(status['aks_status'])
-        print(status['pust_frekvens'])
+        print(status['Pust_Status'])
+        print(status['Pust_Frekvens'])
         time.sleep(0.05)
 
     

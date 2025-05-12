@@ -1,4 +1,4 @@
-from mpu6050 import mpu6050
+from mpu6050_1.mpu6050_2.mpu6050 import mpu6050
 from time import sleep
 import math
 import time
@@ -260,7 +260,7 @@ if __name__ == "__main__":
         file_path = "sensor_status_log_no_avg.csv" # Endret filnavn
         file_exists = os.path.exists(file_path)
         print(f"Logger data til: {file_path}")
-
+        '''
         with open(file_path, "a", newline='') as file:
             writer = csv.writer(file)
             if not file_exists or os.path.getsize(file_path) == 0:
@@ -268,24 +268,24 @@ if __name__ == "__main__":
                     "Timestamp", "Total_G", "Aks_Status",
                     "Total_Gyro_DPS", "Gyro_Status"
                 ])
+        '''
+        while True:
+            current_loop_time = time.time()
+            status_data = mpu.oppdater_og_vurder_status()
+            '''
+            writer.writerow([
+                current_loop_time, status_data['total_G'], status_data['aks_status'],
+                status_data['total_Gyro'], status_data['gyro_status']
+            ])
+            file.flush()
+            '''
+            if current_loop_time - last_print_time >= output_interval:
+                print(f"Tid: {current_loop_time:.1f} | "
+                        f"G: {status_data['Total_G']:.2f}g [{status_data['Aks_Status']}] | "
+                        f"Gyro: {status_data['Total_Gyro']:.1f}dps [{status_data['Gyro_Status']}]")
+                last_print_time = current_loop_time
 
-            while True:
-                current_loop_time = time.time()
-                status_data = mpu.oppdater_og_vurder_status()
-
-                writer.writerow([
-                    current_loop_time, status_data['total_G'], status_data['aks_status'],
-                    status_data['total_Gyro'], status_data['gyro_status']
-                ])
-                file.flush()
-
-                if current_loop_time - last_print_time >= output_interval:
-                    print(f"Tid: {current_loop_time:.1f} | "
-                          f"G: {status_data['total_G']:.2f}g [{status_data['aks_status']}] | "
-                          f"Gyro: {status_data['total_Gyro']:.1f}dps [{status_data['gyro_status']}]")
-                    last_print_time = current_loop_time
-
-                sleep(0.01)
+            sleep(0.01)
 
     except KeyboardInterrupt:
         print("\nAvslutter programmet.")

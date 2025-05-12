@@ -15,6 +15,9 @@ class analyse_MS5837:
                 self.forrgie_status = None
                 self.retningsendring = None
                 self.teller = 0 
+                self.under_vann_30s=False
+                self.under_vann=False
+                self.Ivann=False
 
                 if not self.sensor.init():
                         # We must initialize the sensor before reading it
@@ -51,20 +54,20 @@ class analyse_MS5837:
                         exit(1)
                 
                 if (Trykk > 1070): # ca 50cm under vann. 
-                        under_vann = True
+                        self.under_vann = True
                         self.teller += 1 
                 else:
-                        under_vann = False
+                        self.under_vann = False
                         self.teller = 0
                 
                 if (self.teller > 60):
-                        under_vann_30s = True
+                        self.under_vann_30s = True
 
                 
                 if (Trykk > 1025.6): # 1cm under vannoverflate = 0.981mbar: tilsvarer nå 2cm
-                        Ivann = True
+                        self.Ivann = True
                 else:
-                        Ivann = False
+                        self.Ivann = False
                 
                 if (Lagre == True):
                         self.skriv_til_fil(Filnavn, Trykk)
@@ -72,9 +75,9 @@ class analyse_MS5837:
 
                 return   {'Retningsendring' : self.retningsendring,
                          'Trykk': Trykk,   
-                         'I_vann': Ivann,
-                         'Under_vann': under_vann,
-                         'Under_vann_30s': under_vann_30s}
+                         'I_Vann': self.Ivann,
+                         'Under_Vann': self.under_vann,
+                         'Under_Vann_30s': self.under_vann_30s}
         
         def skriv_til_fil(self, filnavn, verdi):
                 if not filnavn.endswith(".csv"):

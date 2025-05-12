@@ -8,7 +8,7 @@ class AnalyseAD8232:
     def __init__(self):
         # Initialiserer I2C og ADC
         self.i2c = busio.I2C(board.SCL, board.SDA)
-        self.adc = ADS1015.ADS1015(i2c)
+        self.adc = ADS1015.ADS1015(self.i2c)
         self.channel = AnalogIn.AnalogIn(self.adc, ADS1015.P0)
         self.THRESHOLD = 26000
         self.DEBOUNCE_TIME = 0.25  # sekunder
