@@ -127,7 +127,8 @@ class VL6180XAnalyser:
 
 
     def analyserer_stopp(self, Lagre = False, Filnavn = ""):
-
+        '''Lager og  sender buffervindu til vurder_stabilitet og kalkuler_pustefrekvens.
+        metoden brukes av en thread i hovedprogrammet.'''
         Range_data = self.sensor.range
 
         self.raw_puste_buffer.append(Range_data)
@@ -152,11 +153,11 @@ class VL6180XAnalyser:
             self.pust = (count/8/2) * 60
             self.raw_puste_frekvens_buffer.clear()
 
-        if (self.pust <= 12):
+        if (self.pust <= 20):
              puste_frekvens = "Lav"
-        elif (12 < self.pust <= 20):
+        elif (12 < self.pust <= 30):
             puste_frekvens = "Normal"
-        elif (self.pust > 20):
+        elif (self.pust > 40):
             puste_frekvens = "Høy"
         else:
             puste_frekvens = "initialiserer"
