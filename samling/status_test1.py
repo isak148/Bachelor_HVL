@@ -4,6 +4,7 @@ from ArduinoAD8232ECG.Bachelor_Pulsmåling import AnalyseAD8232 as pulssensor
 from VL6180X.examples import bachelor_pustesenor as pustesensor 
 import threading
 import time
+import csv
 
 
 class Status: 
