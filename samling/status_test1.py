@@ -32,18 +32,18 @@ class Status:
     def get_data_aks(self):
         # Denne skal retunere: 'total_G': tot_G, 'is_periodic': last_periodicity_status,'retning' : retning
         while(self.oppstart):
-            self.data_aks = self.aks_sensor.oppdater_og_vurder_status(Lagre=True, Filnavn="Akselerasjon") # True for lagre og ønsket filnavn
+            self.data_aks = self.aks_sensor.oppdater_og_vurder_status(Lagre=True, Filnavn="Akselerasjon2") # True for lagre og ønsket filnavn
         
     
     def get_data_LFR_Preasure(self): 
         while(self.oppstart):
-            self.data_LFR = self.LFR_sensor.analyserer_stopp(Lagre=True, Filnavn="Puste_frekvens")          # True for lagre og ønsket filnavn
-            self.data_preassure = self.trykk_sensor.read_sensor_data(Lagre=True, Filnavn="Trykk")  # True for lagre og ønsket filnavn
+            self.data_LFR = self.LFR_sensor.analyserer_stopp(Lagre=True, Filnavn="Puste_frekvens2")          # True for lagre og ønsket filnavn
+            self.data_preassure = self.trykk_sensor.read_sensor_data(Lagre=True, Filnavn="Trykk2")  # True for lagre og ønsket filnavn
                  
 
     def get_data_pulse(self):
         while(self.oppstart):
-            self.data_pulse = self.puls_sensor.get_data(Lagre=True, Filnavn="Puls")               # True for lagre og ønsket filnavn
+            self.data_pulse = self.puls_sensor.get_data(Lagre=True, Filnavn="Puls2")               # True for lagre og ønsket filnavn
             
          
     def get_data_bool(self):
@@ -449,22 +449,22 @@ if __name__ == "__main__":
 
         if status.Flyter():
             print("Flyter")
-            status.skriv_til_fil("status", "Flyter")
+            status.skriv_til_fil("status2", "Flyter")
         elif status.Svømmer():
             print("Svømmer")
-            status.skriv_til_fil("status", "svømmer")
+            status.skriv_til_fil("status2", "svømmer")
         elif status.Dykker():
             print("Dykker")
-            status.skriv_til_fil("status", "Dykker")
+            status.skriv_til_fil("status2", "Dykker")
         elif status.Svømmer_opp():
             print("Svømmer opp")
-            status.skriv_til_fil("status", "Svømmer opp")
+            status.skriv_til_fil("status2", "Svømmer opp")
         elif status.Drukner():
             print("Drukner")
-            status.skriv_til_fil("status", "Drukner")
+            status.skriv_til_fil("status2", "Drukner")
         else:
             print("Uvisst status / Initialiserer")
-            status.skriv_til_fil("status", "Uvisst status / Initialiserer")
+            status.skriv_til_fil("status2", "Uvisst status / Initialiserer")
 
     print("Testmodus avsluttet etter 60 sekunder.")     
 
