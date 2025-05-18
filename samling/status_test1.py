@@ -19,7 +19,7 @@ class Status:
         self.data_aks = {} #'total_G': tot_G "float",   'total_Gyro': tot_Gyro "float",     'aks_status': status_fra_G "string",     'gyro_status': status_fra_Gyro "string"
         self.data_LFR = {} # 'pust_status': status_fra_pust, 'pust_frekvens': puste_frekvens "initialiserer, lav, middels, høy"
         self.data_pulse = {} # {'puls': median_bpm "float",   'puls_status': self.puls_status "lav, middels, høy"}
-        self.data_preassure = {} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool", 'Under_vann_30s': under_vann_30s "Bool"} 
+        self.data_preassure = {'I_Vann': True,'Under_Vann': True,"Under_Vann_30s":False,'Retningsendring':"Uendret"} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool", 'Under_vann_30s': under_vann_30s "Bool"} 
         self.oppstart = False
         self.count = 0 
         
@@ -35,29 +35,39 @@ class Status:
         interval = 0.01  # 100 Hz → 10 ms
         next_time = time.perf_counter()
         while(self.oppstart):
-            self.data_aks = self.aks_sensor.oppdater_og_vurder_status(Lagre=True, Filnavn="Akselerasjon2") # True for lagre og ønsket filnavn
+            self.data_aks = self.aks_sensor.oppdater_og_vurder_status(Lagre=True, Filnavn="Akselerasjon3") # True for lagre og ønsket filnavn
             next_time += interval
             sleep_time = next_time - time.perf_counter()
             if sleep_time > 0:
                 time.sleep(sleep_time)
         
     
-    def get_data_LFR_Preasure(self): 
-        interval = 0.05  # 20 Hz → 20 ms
+    def get_data_LFR(self): 
+        interval = 0.05  # 20 Hz → 50 ms
         next_time = time.perf_counter()
         while(self.oppstart):
-            self.data_LFR = self.LFR_sensor.analyserer_stopp(Lagre=True, Filnavn="Puste_frekvens2")          # True for lagre og ønsket filnavn
-            self.data_preassure = self.trykk_sensor.read_sensor_data(Lagre=True, Filnavn="Trykk2")  # True for lagre og ønsket filnavn
+            self.data_LFR = self.LFR_sensor.analyserer_stopp(Lagre=True, Filnavn="Puste_frekvens3")          # True for lagre og ønsket filnavn
             next_time += interval
             sleep_time = next_time - time.perf_counter()
             if sleep_time > 0:
                 time.sleep(sleep_time)   
 
+    def get_data_Preasure(self): 
+        interval = 0.5 # 20 Hz → 50 ms
+        next_time = time.perf_counter()
+        while(self.oppstart):
+            self.data_preassure = self.trykk_sensor.read_sensor_data(Lagre=True, Filnavn="Trykk3")  # True for lagre og ønsket filnavn
+            next_time += interval
+            sleep_time = next_time - time.perf_counter()
+            if sleep_time > 0:
+                time.sleep(sleep_time)   
+
+
     def get_data_pulse(self):
         interval = 0.01  # 100 Hz → 10 ms
         next_time = time.perf_counter()
         while(self.oppstart):
-            self.data_pulse = self.puls_sensor.get_data(Lagre=True, Filnavn="Puls2")               # True for lagre og ønsket filnavn
+            self.data_pulse = self.puls_sensor.get_data(Lagre=True, Filnavn="Puls3")               # True for lagre og ønsket filnavn
             next_time += interval
             sleep_time = next_time - time.perf_counter()
             if sleep_time > 0:
@@ -453,12 +463,14 @@ if __name__ == "__main__":
     # Start trådene umiddelbart (ingen sjekk for "i vann")
     status.threding_start(True)
     aks_thread = threading.Thread(target=status.get_data_aks, daemon=True)
-    trykk_thread = threading.Thread(target=status.get_data_LFR_Preasure, daemon=True)
+    trykk_thread = threading.Thread(target=status.get_data_Preasure, daemon=True)
     puls_thread = threading.Thread(target=status.get_data_pulse, daemon=True)
+    pust_thread = threading.Thread(target=status.get_data_LFR, daemon=True)
 
     aks_thread.start()
     trykk_thread.start()
     puls_thread.start()
+    pust_thread.start()
 
     # Start testklokke
     start_tid = time.time()
@@ -470,22 +482,22 @@ if __name__ == "__main__":
 
         if status.Flyter():
             print("Flyter")
-            status.skriv_til_fil("status2", "Flyter")
+            status.skriv_til_fil("status3", "Flyter")
         elif status.Svømmer():
             print("Svømmer")
-            status.skriv_til_fil("status2", "svømmer")
+            status.skriv_til_fil("status3", "svømmer")
         elif status.Dykker():
             print("Dykker")
-            status.skriv_til_fil("status2", "Dykker")
+            status.skriv_til_fil("status3", "Dykker")
         elif status.Svømmer_opp():
             print("Svømmer opp")
-            status.skriv_til_fil("status2", "Svømmer opp")
+            status.skriv_til_fil("status3", "Svømmer opp")
         elif status.Drukner():
             print("Drukner")
-            status.skriv_til_fil("status2", "Drukner")
+            status.skriv_til_fil("status3", "Drukner")
         else:
             print("Uvisst status / Initialiserer")
-            status.skriv_til_fil("status2", "Uvisst status / Initialiserer")
+            status.skriv_til_fil("status3", "Uvisst status / Initialiserer")
         count+=1
     print("Testmodus avsluttet etter 60 sekunder.")     
 
