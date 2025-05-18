@@ -365,6 +365,15 @@ class Status:
              self.ivann = False 
         
         return self.ivann
+    
+
+    def skriv_til_fil(self, filnavn, verdi):
+                if not filnavn.endswith(".csv"):
+                        filnavn += ".csv"  # Legger til .csv hvis det mangler
+
+                with open(filnavn, mode='a', newline='', encoding='utf-8') as fil:
+                        writer = csv.writer(fil)
+                        writer.writerow([verdi])  # Skriver én tallverdi på ny linje
              
 
         
@@ -439,16 +448,22 @@ if __name__ == "__main__":
 
         if status.Flyter():
             print("Flyter")
+            status.skriv_til_fil("status", "Flyter")
         elif status.Svømmer():
             print("Svømmer")
+            status.skriv_til_fil("status", "svømmer")
         elif status.Dykker():
             print("Dykker")
+            status.skriv_til_fil("status", "Dykker")
         elif status.Svømmer_opp():
             print("Svømmer opp")
+            status.skriv_til_fil("status", "Svømmer opp")
         elif status.Drukner():
             print("Drukner")
+            status.skriv_til_fil("status", "Drukner")
         else:
             print("Uvisst status / Initialiserer")
+            status.skriv_til_fil("status", "Uvisst status / Initialiserer")
 
     print("Testmodus avsluttet etter 60 sekunder.")     
 

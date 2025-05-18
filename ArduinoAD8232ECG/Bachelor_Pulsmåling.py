@@ -62,8 +62,8 @@ class AnalyseAD8232:
                 self.skriv_til_fil(Filnavn, value)
 
             time.sleep(0.01)
-            print(self.puls_status)
-            print(self.median_bpm)
+            #print(self.puls_status) # Feilsøking: 
+            #print(self.median_bpm) # Feilsøking
             return {'Puls': self.median_bpm,
                     'Puls_Status': self.puls_status}
     
