@@ -200,7 +200,7 @@ class MPU6050_Orientation(mpu6050):
         og kaller vurderingsfunksjoner når bufferne er fulle.
         Returnerer øyeblikkelige verdier og de sist beregnede statusene.
         """
-        sleep(0.01)
+        
         accel_data, gyro_data = self.get_data()
         tot_G = math.sqrt(accel_data['x']**2 + accel_data['y']**2 + accel_data['z']**2)
         tot_Gyro = math.sqrt(gyro_data['x']**2 + gyro_data['y']**2 + gyro_data['z']**2)

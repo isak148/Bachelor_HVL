@@ -61,7 +61,7 @@ class AnalyseAD8232:
             if (Lagre == True):
                 self.skriv_til_fil(Filnavn, value)
 
-            time.sleep(0.01)
+            
             #print(self.puls_status) # Feilsøking: 
             #print(self.median_bpm) # Feilsøking
             return {'Puls': self.median_bpm,

@@ -32,19 +32,37 @@ class Status:
         
     def get_data_aks(self):
         # Denne skal retunere: 'total_G': tot_G, 'is_periodic': last_periodicity_status,'retning' : retning
+        interval = 0.01  # 100 Hz → 10 ms
+        next_time = time.perf_counter()
         while(self.oppstart):
             self.data_aks = self.aks_sensor.oppdater_og_vurder_status(Lagre=True, Filnavn="Akselerasjon2") # True for lagre og ønsket filnavn
+            next_time += interval
+            sleep_time = next_time - time.perf_counter()
+            if sleep_time > 0:
+                time.sleep(sleep_time)
         
     
     def get_data_LFR_Preasure(self): 
+        interval = 0.05  # 20 Hz → 20 ms
+        next_time = time.perf_counter()
         while(self.oppstart):
             self.data_LFR = self.LFR_sensor.analyserer_stopp(Lagre=True, Filnavn="Puste_frekvens2")          # True for lagre og ønsket filnavn
             self.data_preassure = self.trykk_sensor.read_sensor_data(Lagre=True, Filnavn="Trykk2")  # True for lagre og ønsket filnavn
-            time.sleep(0.05)     
+            next_time += interval
+            sleep_time = next_time - time.perf_counter()
+            if sleep_time > 0:
+                time.sleep(sleep_time)   
 
     def get_data_pulse(self):
+        interval = 0.01  # 100 Hz → 10 ms
+        next_time = time.perf_counter()
         while(self.oppstart):
             self.data_pulse = self.puls_sensor.get_data(Lagre=True, Filnavn="Puls2")               # True for lagre og ønsket filnavn
+            next_time += interval
+            sleep_time = next_time - time.perf_counter()
+            if sleep_time > 0:
+                time.sleep(sleep_time)   
+
             
          
     def get_data_bool(self):
