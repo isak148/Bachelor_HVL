@@ -31,18 +31,18 @@ class Status:
     def get_data_aks(self):
         # Denne skal retunere: 'total_G': tot_G, 'is_periodic': last_periodicity_status,'retning' : retning
         while(self.oppstart):
-            self.data_aks = self.aks_sensor.oppdater_og_vurder_status() # True for lagre og ønsket filnavn
+            self.data_aks = self.aks_sensor.oppdater_og_vurder_status(Lagre=True, Filnavn="Akselerasjon") # True for lagre og ønsket filnavn
         
     
     def get_data_LFR_Preasure(self): 
         while(self.oppstart):
-            self.data_LFR = self.LFR_sensor.analyserer_stopp()          # True for lagre og ønsket filnavn
-            self.data_preassure = self.trykk_sensor.read_sensor_data()  # True for lagre og ønsket filnavn
+            self.data_LFR = self.LFR_sensor.analyserer_stopp(Lagre=True, Filnavn="Puste_frekvens")          # True for lagre og ønsket filnavn
+            self.data_preassure = self.trykk_sensor.read_sensor_data(Lagre=True, Filnavn="Trykk")  # True for lagre og ønsket filnavn
                  
 
     def get_data_pulse(self):
         while(self.oppstart):
-            self.data_pulse = self.puls_sensor.get_data()               # True for lagre og ønsket filnavn
+            self.data_pulse = self.puls_sensor.get_data(Lagre=True, Filnavn="Puls")               # True for lagre og ønsket filnavn
             
          
     def get_data_bool(self):
