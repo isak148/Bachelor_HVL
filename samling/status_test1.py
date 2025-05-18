@@ -474,7 +474,7 @@ if __name__ == "__main__":
 
     # Start testklokke
     start_tid = time.time()
-    kjøretid = 30  # sekunder
+    kjøretid = 60  # sekunder
     count = 0
 
     while count<=kjøretid:
