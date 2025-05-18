@@ -164,7 +164,7 @@ class VL6180XAnalyser:
 
         if(Lagre == True): # skriver til fil om Lagre er satt til True
             self.skriv_til_fil(Filnavn, Range_data)
-        
+      
 
         return {        
             'Pust_Status': status_fra_pust,

@@ -22,6 +22,7 @@ class Status:
         self.data_preassure = {} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool", 'Under_vann_30s': under_vann_30s "Bool"} 
         self.oppstart = False
         self.count = 0 
+        
     
     def threding_start(self,verdi):
         if(verdi == True):
@@ -39,7 +40,7 @@ class Status:
         while(self.oppstart):
             self.data_LFR = self.LFR_sensor.analyserer_stopp(Lagre=True, Filnavn="Puste_frekvens2")          # True for lagre og ønsket filnavn
             self.data_preassure = self.trykk_sensor.read_sensor_data(Lagre=True, Filnavn="Trykk2")  # True for lagre og ønsket filnavn
-                 
+            time.sleep(0.05)     
 
     def get_data_pulse(self):
         while(self.oppstart):
@@ -429,6 +430,7 @@ if __name__ == "__main__":
         
 if __name__ == "__main__":
     status = Status()
+    print("starter hovedtråd")
 
     # Start trådene umiddelbart (ingen sjekk for "i vann")
     status.threding_start(True)
@@ -442,9 +444,10 @@ if __name__ == "__main__":
 
     # Start testklokke
     start_tid = time.time()
-    kjøretid = 60  # sekunder
+    kjøretid = 30  # sekunder
+    count = 0
 
-    while time.time() - start_tid < kjøretid:
+    while count<=kjøretid:
         time.sleep(1)
 
         if status.Flyter():
@@ -465,7 +468,7 @@ if __name__ == "__main__":
         else:
             print("Uvisst status / Initialiserer")
             status.skriv_til_fil("status2", "Uvisst status / Initialiserer")
-
+        count+=1
     print("Testmodus avsluttet etter 60 sekunder.")     
 
 

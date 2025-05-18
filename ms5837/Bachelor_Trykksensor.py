@@ -27,7 +27,7 @@ class analyse_MS5837:
        
         def read_sensor_data(self, Lagre = False , Filnavn = ""):    
                 # Spew readings
-                time.sleep(0.5)
+                
                 if self.sensor.read():
                         print(("P: %0.1f mbar ")%(self.sensor.pressure())) # Default is mbar (no arguments)
 
