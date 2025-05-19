@@ -35,7 +35,7 @@ class Status:
         interval = 0.01  # 100 Hz → 10 ms
         next_time = time.perf_counter()
         while(self.oppstart):
-            self.data_aks = self.aks_sensor.oppdater_og_vurder_status(Lagre=True, Filnavn="Akselerasjon4") # True for lagre og ønsket filnavn
+            self.data_aks = self.aks_sensor.oppdater_og_vurder_status(Lagre=True, Filnavn="Akselerasjon5") # True for lagre og ønsket filnavn
             next_time += interval
             sleep_time = next_time - time.perf_counter()
             if sleep_time > 0:
@@ -46,7 +46,7 @@ class Status:
         interval = 0.05  # 20 Hz → 50 ms
         next_time = time.perf_counter()
         while(self.oppstart):
-            self.data_LFR = self.LFR_sensor.analyserer_stopp(Lagre=True, Filnavn="Puste_frekvens4")          # True for lagre og ønsket filnavn
+            self.data_LFR = self.LFR_sensor.analyserer_stopp(Lagre=True, Filnavn="Puste_frekvens5")          # True for lagre og ønsket filnavn
             next_time += interval
             sleep_time = next_time - time.perf_counter()
             if sleep_time > 0:
@@ -56,7 +56,7 @@ class Status:
         interval = 0.5 # 20 Hz → 50 ms
         next_time = time.perf_counter()
         while(self.oppstart):
-            self.data_preassure = self.trykk_sensor.read_sensor_data(Lagre=True, Filnavn="Trykk4")  # True for lagre og ønsket filnavn
+            self.data_preassure = self.trykk_sensor.read_sensor_data(Lagre=True, Filnavn="Trykk5")  # True for lagre og ønsket filnavn
             next_time += interval
             sleep_time = next_time - time.perf_counter()
             if sleep_time > 0:
@@ -67,7 +67,7 @@ class Status:
         interval = 0.01  # 100 Hz → 10 ms
         next_time = time.perf_counter()
         while(self.oppstart):
-            self.data_pulse = self.puls_sensor.get_data(Lagre=True, Filnavn="Puls4")               # True for lagre og ønsket filnavn
+            self.data_pulse = self.puls_sensor.get_data(Lagre=True, Filnavn="Puls5")               # True for lagre og ønsket filnavn
             next_time += interval
             sleep_time = next_time - time.perf_counter()
             if sleep_time > 0:
@@ -481,22 +481,22 @@ if __name__ == "__main__":
 
         if status.Flyter():
             print("Flyter")
-            status.skriv_til_fil("status4", "Flyter")
+            status.skriv_til_fil("status5", "Flyter")
         elif status.Svømmer():
             print("Svømmer")
-            status.skriv_til_fil("status4", "svømmer")
+            status.skriv_til_fil("status5", "svømmer")
         elif status.Dykker():
             print("Dykker")
-            status.skriv_til_fil("status4", "Dykker")
+            status.skriv_til_fil("status5", "Dykker")
         elif status.Svømmer_opp():
             print("Svømmer opp")
-            status.skriv_til_fil("status4", "Svømmer opp")
+            status.skriv_til_fil("status5", "Svømmer opp")
         elif status.Drukner():
             print("Drukner")
-            status.skriv_til_fil("status4", "Drukner")
+            status.skriv_til_fil("status5", "Drukner")
         else:
             print("Uvisst status / Initialiserer")
-            status.skriv_til_fil("status4", "Uvisst status / Initialiserer")
+            status.skriv_til_fil("status5", "Uvisst status / Initialiserer")
         count+=1
     print("Testmodus avsluttet etter 60 sekunder.")     
 
