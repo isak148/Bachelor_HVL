@@ -227,7 +227,7 @@ class MPU6050_Orientation(mpu6050):
             retning = ("Plan")
 
         if(Lagre == True):
-            self.skriv_til_fil(Filnavn, tot_G, tot_Gyro)
+            self.skriv_til_fil(Filnavn, tot_G, tot_Gyro, accel_data['z'], retning)
 
 
         return {
@@ -239,13 +239,13 @@ class MPU6050_Orientation(mpu6050):
         }
     
     
-    def skriv_til_fil(self, filnavn, verdi1, verdi2):
+    def skriv_til_fil(self, filnavn, verdi1, verdi2, verdi3, verdi4):
         if not filnavn.endswith(".csv"):
             filnavn += ".csv"  # Legger til .csv hvis det mangler
 
         with open(filnavn, mode='a', newline='', encoding='utf-8') as fil:
             writer = csv.writer(fil)
-            writer.writerow([verdi1, verdi2])  # Skriver begge verdiene på én linje
+            writer.writerow([verdi1, verdi2, verdi3, verdi4])  # Skriver begge verdiene på én linje
 
 # --- Hovedprogram (uendret fra forrige versjon) ---
 if __name__ == "__main__":

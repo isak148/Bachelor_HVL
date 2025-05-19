@@ -19,7 +19,7 @@ class Status:
         self.data_aks = {} #'total_G': tot_G "float",   'total_Gyro': tot_Gyro "float",     'aks_status': status_fra_G "string",     'gyro_status': status_fra_Gyro "string"
         self.data_LFR = {} # 'pust_status': status_fra_pust, 'pust_frekvens': puste_frekvens "initialiserer, lav, middels, høy"
         self.data_pulse = {} # {'puls': median_bpm "float",   'puls_status': self.puls_status "lav, middels, høy"}
-        self.data_preassure = {'I_Vann': True,'Under_Vann': True,"Under_Vann_30s":False,'Retningsendring':"Uendret"} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool", 'Under_vann_30s': under_vann_30s "Bool"} 
+        self.data_preassure = {} # {'status' : self.retningsendring "String",   'Trykk': Trykk "float",   'I_vann': Ivann "bool",  'under_vann': under_vann "bool", 'Under_vann_30s': under_vann_30s "Bool"} 
         self.oppstart = False
         self.count = 0 
         
@@ -139,8 +139,7 @@ class Status:
          elif (Pust_Status == "Puste_Stopp"):
               Pust_Status_Puster = False
               Pust_Status_Puste_stopp = True
-              Pust_Status_Puster_Ikke = False
-              
+              Pust_Status_Puster_Ikke = False           
          elif (Pust_Status == "Puster_Ikke"):
               Pust_Status_Puster = False
               Pust_Status_Puste_stopp = False
