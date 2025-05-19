@@ -11,7 +11,7 @@ class Status:
 
     def __init__(self): # kjører init, init i sensor programmer vil også bli kjørt før programmet starter. 
         self.variabler = {} 
-        self.trykk_sensor = Trykksensor.analyse_MS5837()
+        self.trykk_sensor = Trykksensor.analyse_MS5837() 
         self.puls_sensor = pulssensor()
         self.aks_sensor = Akssensor.MPU6050_Orientation(0x68)
         self.LFR_sensor = pustesensor.VL6180XAnalyser()
@@ -23,13 +23,17 @@ class Status:
         self.oppstart = False
         self.count = 0 
         
-    
+    '''
+    Threading_start holder trådene i while løkken slik at de kontinuerlig oppdaterer variablene for sensordata. Kan settes til false i 
+    hovedprogrammet av trykk-sensor slik at alle sensorene ikke går kontinuerlig, dette for og optimalisere strømforbruk.
+    '''
     def threding_start(self,verdi):
         if(verdi == True):
             self.oppstart = True
         else:
             self.oppstart = False
-        
+
+      
     def get_data_aks(self):
         # Denne skal retunere: 'total_G': tot_G, 'is_periodic': last_periodicity_status,'retning' : retning
         interval = 0.01  # 100 Hz → 10 ms
