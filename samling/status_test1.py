@@ -9,7 +9,7 @@ import csv
 
 class Status: 
 
-    def __init__(self):
+    def __init__(self): # kjører init, init i sensor programmer vil også bli kjørt før programmet starter. 
         self.variabler = {} 
         self.trykk_sensor = Trykksensor.analyse_MS5837()
         self.puls_sensor = pulssensor()
@@ -155,13 +155,13 @@ class Status:
               Pust_Frekvens_Normal = False
               Pust_Frekvens_Høy = False 
          elif (Puste_Frekvens == "Normal"):
-              Pust_Frekvens_Lav = True
-              Pust_Frekvens_Normal = False
+              Pust_Frekvens_Lav = False
+              Pust_Frekvens_Normal = True
               Pust_Frekvens_Høy = False
          elif (Puste_Frekvens == "Høy"):
-              Pust_Frekvens_Lav = True
+              Pust_Frekvens_Lav = False
               Pust_Frekvens_Normal = False
-              Pust_Frekvens_Høy = False
+              Pust_Frekvens_Høy = True
          else:
               Pust_Frekvens_Lav = False
               Pust_Frekvens_Normal = False
@@ -345,6 +345,10 @@ class Status:
         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
         # True eller false 
         Data = self.get_data_bool()
+        # Kritisk overstyring - uansett andre forhold.
+        if (Data['Pust_Status_Puster_Ikke'] | Data['Under_Vann_30s']):
+            return True 
+
         if ((Data['Retning_Opp'] == True | Data['Retning_Opp'] == True) &
             (Data['Aks_Status_Stille'] == True | Data['Aks_Status_Moderat'] == True | Data['Aks_Status_Høy'] == True) &
             (Data['Gyro_Status_Stille'] == True |Data['Gyro_Status_Moderat'] == True | Data['Gyro_Status_Høy'] == True) &
@@ -352,9 +356,7 @@ class Status:
             (Data['Under_vann'] == True | Data['Under_vann'] == False) &
             (Data['Puls_Status_Lav'] == True | Data['Puls_Status_Middel'] == True | Data['Puls_Status_Høy'] == True) &
             (Data['Pust_Frekvens_Lav'] == True) &
-            (Data['Pust_Status_Puste_stopp'] == True) |  # OR om scømmeren ikke har pustet på lenge
-            (Data['Pust_Status_Puster_Ikke'] == True) |  # OR om svømmeren har vært under vann for lenge
-            (Data['Under_Vann_30s'] == True)):
+            (Data['Pust_Status_Puste_stopp'] == True)):     
             status = True
         else:
             status = False 
