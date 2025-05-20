@@ -23,11 +23,12 @@ class Status:
         self.oppstart = False
         self.count = 0 
         
-    '''
-    Threading_start holder trådene i while løkken slik at de kontinuerlig oppdaterer variablene for sensordata. Kan settes til false i 
-    hovedprogrammet av trykk-sensor slik at alle sensorene ikke går kontinuerlig, dette for og optimalisere strømforbruk.
-    '''
+   
     def threding_start(self,verdi):
+        '''
+        Threading_start holder trådene i while løkken slik at de kontinuerlig oppdaterer variablene for sensordata. Kan settes til false i 
+        hovedprogrammet av trykk-sensor slik at alle sensorene ikke går kontinuerlig, dette for og optimalisere strømforbruk.
+        '''
         if(verdi == True):
             self.oppstart = True
         else:
@@ -35,7 +36,7 @@ class Status:
 
       
     def get_data_aks(self):
-        # Denne skal retunere: 'total_G': tot_G, 'is_periodic': last_periodicity_status,'retning' : retning
+        '''Kjører program for MPU og oppdaterer aks og gyro variabeler, kontinuerlig'''
         interval = 0.01  # 100 Hz → 10 ms
         next_time = time.perf_counter()
         while(self.oppstart):
@@ -47,6 +48,7 @@ class Status:
         
     
     def get_data_LFR(self): 
+        '''Kjører program for LRF og oppdaterer puste variabeler kontinuerlig'''
         interval = 0.05  # 20 Hz → 50 ms
         next_time = time.perf_counter()
         while(self.oppstart):
@@ -56,7 +58,8 @@ class Status:
             if sleep_time > 0:
                 time.sleep(sleep_time)   
 
-    def get_data_Preasure(self): 
+    def get_data_Preasure(self):
+        '''Kjører program for Trykksensor og oppdaterer trykk variabeler kontinuerlig''' 
         interval = 0.5 # 20 Hz → 50 ms
         next_time = time.perf_counter()
         while(self.oppstart):
@@ -68,6 +71,7 @@ class Status:
 
 
     def get_data_pulse(self):
+        '''Kjører program for Puls og oppdaterer puls kontinuerlig'''
         interval = 0.01  # 100 Hz → 10 ms
         next_time = time.perf_counter()
         while(self.oppstart):
@@ -80,6 +84,8 @@ class Status:
             
          
     def get_data_bool(self):
+         '''Denne konverterer alle variabler fra sensorer til boolske verdier og returnerer dem som True eller False. Med og
+          bruke de felles variablene som blir oppdatert av trådene. '''
          Retning = self.data_aks['Retning']
          if (Retning == "Opp"):
               Retning_Opp = True
@@ -243,38 +249,8 @@ class Status:
 
 
 
-    ''' AKS 
-          return {
-            'Total_G': tot_G,
-            'Total_Gyro': tot_Gyro,
-            'Aks_Status': status_fra_G,
-            'Gyro_Status': status_fra_Gyro,
-            'Retning': retning
-        }
-    '''       
-    ''' LFR
-     return {        
-            'Pust_Status': status_fra_pust,
-            'Pust_Frekvens': puste_frekvens
-        }
-    '''
-    ''' PULS
-    return {'puls': median_bpm,
-                    'Puls_Status': self.puls_status}
-    '''
-    ''' PUST
-     return   {'Retningsendring' : self.retningsendring,
-                         'Trykk': Trykk,
-                         'I_vann': Ivann,
-                         'Under_vann': under_vann} 
-    '''
-
-
-
-
     def Svømmer(self):
-        # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
-        # True eller false
+        '''Definerer logikk for status svømmer'''
         Data = self.get_data_bool()
 
         if ((Data['Retning_Opp'] == True | Data['Retning_Plan'] == True) &
@@ -291,8 +267,7 @@ class Status:
         return status
 
     def Flyter(self):
-        # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
-        # True eller false
+        '''Definerer logikk for status Flyter'''
         Data = self.get_data_bool()
         if ((Data['Retning_Opp'] == True | Data['Retning_Plan'] == True) &
             (Data['Aks_Status_Stille'] == True) &
@@ -308,8 +283,7 @@ class Status:
         return status
     
     def Dykker(self):
-        # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
-        # True eller false
+        '''Definerer logikk for status Dykker'''
         Data = self.get_data_bool()
         if (( Data['Retning_Plan'] == True | Data['Retning_Ned'] == True) &
             (Data['Aks_Status_Moderat'] == True | Data['Aks_Status_Høy'] == True) &
@@ -327,8 +301,7 @@ class Status:
         
 
     def Svømmer_opp(self):
-         # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
-        # True eller false
+        '''Definerer logikk for status Svømmer_opp'''
         Data = self.get_data_bool()
         if ((Data['Retning_Opp'] == True) &
             (Data['Aks_Status_Moderat'] == True | Data['Aks_Status_Høy'] == True) &
@@ -346,8 +319,7 @@ class Status:
     
     
     def Drukner(self):
-        # Denne skal mota status fra hovedprogrammet gjennom dict og retunere
-        # True eller false 
+        '''Definerer logikk for status drukner''' 
         Data = self.get_data_bool()
         # Kritisk overstyring - uansett andre forhold.
         if (Data['Pust_Status_Puster_Ikke'] | Data['Under_Vann_30s']):
@@ -367,21 +339,10 @@ class Status:
        
         return status
     
-    def Initialiserer(self):
-        # skal retunere initaialiserer viss en sensor returnerer initialiserer eller ubestemt under oppstartsfasen.
-        Data = self.get_data_bool()
-        if ():
-              pass
-        else:
-              pass
-        
-        return False
-
         
     def Aktivert(self):
         '''Metoden sjekker om trykksensoren registrerer vann når den er i initial tilstanden False. 
          hvis sensoren kommer 2cm under vann vil den starte opp alle sensorene med threads.'''
-        # Denne skal bestemme om svømmeren er i vann og aktivere status analyse.
         if self.ivann == False: # Sjekker om 
             I_vann = self.trykk_sensor.read_sensor_data(['I_vann']) 
             if (I_vann == True):
@@ -403,6 +364,7 @@ class Status:
     
 
     def skriv_til_fil(self, filnavn, verdi):
+                '''Skriver status til en fil i CSV format'''
                 if not filnavn.endswith(".csv"):
                         filnavn += ".csv"  # Legger til .csv hvis det mangler
 
@@ -411,7 +373,7 @@ class Status:
                         writer.writerow([verdi])  # Skriver én tallverdi på ny linje
              
 
-        
+# Hovedprogram som bruker logisk styring med trykksensor       
 '''
 if __name__ == "__main__":
     status = Status()
@@ -460,7 +422,7 @@ if __name__ == "__main__":
             ivann_aktiv = status.Deaktivert() # Sjekker om svømmeren fortsatt er i vann.
 '''
            
-        
+# Test program som kjører i 60 sekunder, trenger ikke aktivering fra trykksensor.        
 if __name__ == "__main__":
     status = Status()
     print("starter hovedtråd")
